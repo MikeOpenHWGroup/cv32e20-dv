@@ -104,9 +104,11 @@ constraint cve2_riscv_cons {
       ext_v_supported        == 0;
       ext_f_supported        == 0;
       ext_d_supported        == 0;
-      ext_zba_supported      == 1;
-      ext_zbb_supported      == 1;
-      ext_zbc_supported      == 1;
+
+      ext_zba_supported      == 0;
+      ext_zbb_supported      == 0;
+      ext_zbc_supported      == 0;
+
       ext_zbe_supported      == 0;
       ext_zbf_supported      == 0;
       ext_zbm_supported      == 0;
@@ -116,13 +118,14 @@ constraint cve2_riscv_cons {
       ext_zbt_supported      == 0;
       ext_zifencei_supported == 1;
       ext_zicsr_supported    == 1;
-      ext_zcb_supported      == 1;
+      ext_zcb_supported      == 0;
 
+      ext_cv32a60x_supported == 0;
       mode_s_supported       == 0;
       mode_u_supported       == 1;
 
       pmp_supported          == 0;
-      debug_supported        == 0;
+      debug_supported        == 1;
 
       unaligned_access_supported     == 0;
       unaligned_access_amo_supported == 0;
@@ -131,6 +134,7 @@ constraint cve2_riscv_cons {
       priv_spec_version       == PRIV_VERSION_MASTER;
       endianness              == ENDIAN_LITTLE;
 
+      pmp_regions             == 8;
       boot_addr_valid         == 1;
       boot_addr               == 'h80000000;
       mtvec_addr_valid        == 1;
@@ -176,12 +180,11 @@ constraint cve2_riscv_cons {
    constraint agent_cfg_cons {
       if (enabled) {
          clknrst_cfg.enabled           == 1;
-         interrupt_cfg.enabled         == 0;
+         interrupt_cfg.enabled         == 1;
          debug_cfg.enabled             == 1;
          obi_memory_instr_cfg.enabled  == 1;
          obi_memory_data_cfg.enabled   == 1;
          rvfi_cfg.enabled              == 1;
-         rvfi_cfg.intr_enabled         == 0;
          rvfi_cfg.unified_csr_vif      == 1;
       }
 
@@ -217,11 +220,11 @@ constraint cve2_riscv_cons {
       soft obi_memory_data_cfg.drv_slv_rvalid_fixed_latency      <= 3;
 
       rvfi_cfg.nret                      == 1;
-      rvfi_cfg.unified_exceptions        == 1;
+      unified_traps                      == 1;
 
       if (is_active == UVM_ACTIVE) {
          clknrst_cfg.is_active           == UVM_ACTIVE;
-         interrupt_cfg.is_active         == UVM_PASSIVE;
+         interrupt_cfg.is_active         == UVM_ACTIVE;
          debug_cfg.is_active             == UVM_ACTIVE;
          obi_memory_instr_cfg.is_active  == UVM_ACTIVE;
          obi_memory_data_cfg.is_active   == UVM_ACTIVE;
@@ -263,6 +266,7 @@ function uvme_cv32e20_cfg_c::new(string name="uvme_cv32e20_cfg");
 
    super.new(name);
 
+   core_name             = "cve2";
    clknrst_cfg           = uvma_clknrst_cfg_c   ::type_id::create("clknrst_cfg"         );
    interrupt_cfg         = uvma_interrupt_cfg_c ::type_id::create("interrupt_cfg"       );
    debug_cfg             = uvma_debug_cfg_c     ::type_id::create("debug_cfg"           );
