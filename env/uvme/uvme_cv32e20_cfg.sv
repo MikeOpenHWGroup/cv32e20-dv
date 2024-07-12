@@ -123,6 +123,7 @@ constraint cve2_riscv_cons {
       ext_cv32a60x_supported == 0;
       mode_s_supported       == 0;
       mode_u_supported       == 1;
+      mode_h_supported       == 0;
 
       pmp_supported          == 0;
       debug_supported        == 1;
