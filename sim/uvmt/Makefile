@@ -29,6 +29,8 @@ export CORE_V_VERIF   = $(abspath $(MAKE_PATH)/../../..)
 export CV_CORE       ?= cv32e20
 
 DPI_DASM_SPIKE_REPO  ?= https://github.com/riscv/riscv-isa-sim.git
+
+export CV_SW_MARCH   = rv32imc_zicsr_zifencei
 CV_SW_TOOLCHAIN      ?= /opt/riscv
 CV_SW_PREFIX         ?= " "
 
@@ -39,7 +41,6 @@ UVM_VERBOSITY        ?= UVM_LOW
 USER_RUN_FLAGS       ?= +scoreboard_enable=1 +UVM_VERBOSITY=$(UVM_VERBOSITY) +report_file=$(TEST).yaml
 
 COMPILE_SPIKE=YES
-
 ISS ?= SPIKE
 
 include ../ExternalRepos.mk
