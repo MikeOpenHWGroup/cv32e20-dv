@@ -27,7 +27,7 @@ typedef class uvme_cv32e20_vp_status_flags_seq_c;
 typedef class uvme_cv32e20_vp_rand_num_seq_c;
 
 import "DPI-C" function longint read_symbol(input string symbol, output longint unsigned address);
-import "DPI-C" function read_elf(input string filename);
+import "DPI-C" function void       read_elf(input string filename);
 /**
  * Top-level component that encapsulates, builds and connects all other
  * CV32E20 environment components.
@@ -196,7 +196,9 @@ function void uvme_cv32e20_env_c::build_phase(uvm_phase phase);
       create_env_components();
 
       if (cfg.is_active) begin
-         load_binary();
+         if ($test$plusargs("USE_ISS")) begin
+            load_binary();
+         end
          create_vsequencer();
       end
 
@@ -502,8 +504,8 @@ function void uvme_cv32e20_env_c::load_binary();
     $value$plusargs("vp_interrupt_timer=%0h",cfg.vp_interrupt_timer);
     $value$plusargs("vp_debug_control=%0h", cfg.vp_debug_control);
 
-    if ($value$plusargs("elf_file=%s", binary))
-    begin
+    if ($value$plusargs("elf_file=%s", binary)) begin
+        `uvm_info("cv32e20_env", $sformatf("\n\t\t\tReading ELF: %s", binary) , UVM_NONE)
         read_elf(binary);
         vp_status_flags_symbol_present = ! read_symbol("tohost", cfg.vp_status_flags_symbol);
         if (vp_status_flags_symbol_present) begin

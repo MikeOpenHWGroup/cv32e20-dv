@@ -337,6 +337,7 @@ module uvmt_cv32e20_tb;
    // overcome race
    `ifdef USE_ISS_IMPERAS
    initial begin
+     //FIXME: this needs to be part of the ENV Cfg
      if ($test$plusargs("USE_ISS")) begin
        #0.9ns;
        imperas_dv.ref_init();

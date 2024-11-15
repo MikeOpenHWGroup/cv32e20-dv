@@ -86,14 +86,31 @@ task uvme_cv32e20_vp_status_flags_seq_c::vp_body(uvma_obi_memory_mon_trn_c mon_t
    slv_rsp.err = 1'b0;
 
    if (mon_trn.access_type == UVMA_OBI_MEMORY_ACCESS_WRITE) begin
-      `uvm_info("VP_VSEQ", $sformatf("Call to virtual peripheral 'vp_status_flags':\n%s", mon_trn.sprint()), UVM_DEBUG)
+      `uvm_info("VP_VSEQ", $sformatf("Call to virtual peripheral 'vp_status_flags':\n%s", mon_trn.sprint()), UVM_NONE)
       case (get_vp_index(mon_trn))
          0: begin
             if (mon_trn.data[0] == 1) begin
                cv32e20_cntxt.vp_status_vif.exit_value   = mon_trn.data >> 1;
                cv32e20_cntxt.vp_status_vif.exit_valid   = 1;
-               `uvm_info("VP_VSEQ", $sformatf("virtual peripheral: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_LOW)
+               `uvm_info("VP_VSEQ_0", $sformatf("virtual peripheral: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_NONE)
             end
+            else begin
+               `uvm_fatal("VP_VSEQ_0", $sformatf("virtual peripheral: (not sure if the) TEST FAILED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value))
+            end
+         end
+         1: begin
+            `uvm_info("VP_SEQ_1", $sformatf("mon_trn.data[0] == %0x",mon_trn.data[0]), UVM_NONE)
+            if (mon_trn.data[0] == 0/*1*/) begin
+               cv32e20_cntxt.vp_status_vif.exit_value   = mon_trn.data >> 1;
+               cv32e20_cntxt.vp_status_vif.exit_valid   = 1;
+               `uvm_info("VP_VSEQ_1", $sformatf("virtual peripheral: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_NONE)
+            end
+            else begin
+               `uvm_fatal("VP_VSEQ_1", $sformatf("virtual peripheral: (not sure if the) TEST FAILED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value))
+            end
+         end
+         default: begin
+             `uvm_fatal("VP_VSEQ_X", $sformatf("virtual peripheral: WFT?!?"))
          end
       endcase
    end

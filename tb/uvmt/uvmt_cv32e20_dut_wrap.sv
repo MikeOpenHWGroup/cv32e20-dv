@@ -136,7 +136,8 @@ module uvmt_cv32e20_dut_wrap #(
          .ram_cfg_i              ( prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT ),
 
          .hart_id_i              ( 32'h0000_0000                  ),
-         .boot_addr_i            ( core_cntrl_if.boot_addr       ), //<---MJS changing to 0
+         //.boot_addr_i            ( core_cntrl_if.boot_addr       ), //<---MJS changing to 0
+         .boot_addr_i            ( 32'h0000_0000                  ),
 
   // Instruction memory interface
          .instr_req_o            ( obi_memory_instr_if.req        ), // core to agent
@@ -158,14 +159,14 @@ module uvmt_cv32e20_dut_wrap #(
          .data_err_i             ( '0                             ),
 
   // Interrupt inputs
-         .irq_software_i         ( irq_uvma[3]),
-         .irq_timer_i            ( irq_uvma[7]),
-         .irq_external_i         ( irq_uvma[11]),
-         .irq_fast_i             ( irq_uvma[31:16]),
-         .irq_nm_i               ( irq_uvma[0]),       // non-maskeable interrupt
+         .irq_software_i         ( 1'b0/*irq_uvma[3]*/),
+         .irq_timer_i            ( 1'b0/*irq_uvma[7]*/),
+         .irq_external_i         ( 1'b0/*irq_uvma[11]*/),
+         .irq_fast_i             ( 16'h0000/*irq_uvma[31:16]*/),
+         .irq_nm_i               ( 1'b0/*irq_uvma[0]*/),       // non-maskeable interrupt
 
   // Debug Interface
-         .debug_req_i             (debug_req_uvma),
+         .debug_req_i             (1'b0/*debug_req_uvma*/),
          .crash_dump_o            (),
 
   // RISC-V Formal Interface
