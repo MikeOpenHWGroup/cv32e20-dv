@@ -33,11 +33,11 @@ module uvmt_cv32e20_tb;
    import uvm_pkg::*;
    import uvmt_cv32e20_pkg::*;
    import uvme_cv32e20_pkg::*;
-   `ifndef FORMAL
-   `ifdef USE_ISS_IMPERAS
+//   `ifndef FORMAL
+//   `ifdef USE_ISS_IMPERAS
    import rvviApiPkg::*;
-   `endif
-   `endif
+//   `endif
+//   `endif
 
 `ifdef SET_NUM_MHPMCOUNTERS
    parameter int CORE_PARAM_NUM_MHPMCOUNTERS = `SET_NUM_MHPMCOUNTERS;
@@ -241,13 +241,13 @@ module uvmt_cv32e20_tb;
   // TODO: replace with CV32E20-specific DEBUG assertions
   uvmt_cv32e20_debug_assert u_debug_assert(/*.cov_assert_if(debug_cov_assert_if)*/);
 
-  // IMPERAS DV
-  `ifndef FORMAL
-  `ifdef USE_ISS_IMPERAS
-    uvmt_cv32e20_imperas_dv_wrap #(
-    ) imperas_dv (rvvi_if);
-  `endif
-  `endif
+//  // IMPERAS DV
+//  `ifndef FORMAL
+//  `ifdef USE_ISS_IMPERAS
+//    uvmt_cv32e20_imperas_dv_wrap #(
+//    ) imperas_dv (rvvi_if);
+//  `endif
+//  `endif
 
   //                // Only drive haltreq if we have an external request
   //                // TODO: replace with ImperasDV
@@ -334,14 +334,12 @@ module uvmt_cv32e20_tb;
    // Informational print message on loading of OVPSIM ISS to benchmark some elf image loading times
    // OVPSIM runs its initialization at the #1ns timestamp, and should dominate the initial startup time
    `ifndef FORMAL // Formal ignores initial blocks, avoids unnecessary warning
-   // overcome race
    `ifdef USE_ISS_IMPERAS
+   uvmt_cv32e20_imperas_dv_wrap #() imperas_dv (rvvi_if);
+
    initial begin
-     //FIXME: this needs to be part of the ENV Cfg
-     if ($test$plusargs("USE_ISS")) begin
-       #0.9ns;
-       imperas_dv.ref_init();
-     end
+     #0.9ns; // overcome race
+     imperas_dv.ref_init();
    end
    `endif
    `endif

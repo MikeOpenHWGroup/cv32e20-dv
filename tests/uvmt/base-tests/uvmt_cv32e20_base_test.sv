@@ -35,8 +35,8 @@ class uvmt_cv32e20_base_test_c extends uvm_test;
    rand uvmt_cv32e20_test_randvars_c test_randvars ;
    rand uvme_cv32e20_cfg_c           env_cfg       ;
    rand uvme_cv32e20_cntxt_c         env_cntxt     ;
-   uvml_logs_rs_text_c                rs            ;
-   uvml_logs_reg_logger_cbs_c         reg_cbs       ;
+   uvml_logs_rs_text_c               rs            ;
+   uvml_logs_reg_logger_cbs_c        reg_cbs       ;
 
    // Components
    uvme_cv32e20_env_c   env       ;
@@ -285,6 +285,9 @@ task uvmt_cv32e20_base_test_c::configure_phase(uvm_phase phase);
      `uvm_info("BASE TEST", "set load_instr_mem", UVM_NONE)
    end
 
+   // Need to tell the TB module which Reference Model we are using.
+   uvm_config_db#(ref_model_enum)::set(uvm_root::get(), "*", "ref_model", test_cfg.ref_model);
+
    //TODO: is this OK?!?
    super.configure_phase(phase);
    `uvm_info("BASE TEST", "configure_phase() complete", UVM_HIGH)
@@ -383,7 +386,6 @@ function void uvmt_cv32e20_base_test_c::create_cfg();
 
    test_cfg = uvmt_cv32e20_test_cfg_c::type_id::create("test_cfg");
    env_cfg  = uvme_cv32e20_cfg_c     ::type_id::create("env_cfg" );
-   //ral      = env_cfg.ral;
 
 endfunction : create_cfg
 

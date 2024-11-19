@@ -24,28 +24,13 @@
  */
 class uvmt_cv32e20_test_cfg_c extends uvm_object;
 
-   //typedef enum {
-   //              PREEXISTING_SELFCHECKING,
-   //              PREEXISTING_NOTSELFCHECKING,
-   //              GENERATED_SELFCHECKING,
-   //              GENERATED_NOTSELFCHECKING,
-   //              NONE
-   //             } test_program_type; 
-
-   
    // Knobs for environment control
    rand int unsigned  startup_timeout ; // Specified in nanoseconds (ns)
    rand int unsigned  heartbeat_period; // Specified in nanoseconds (ns)
    rand int unsigned  watchdog_timeout; // Specified in nanoseconds (ns)
-   
+
    // Knobs for test-program control
    rand test_program_type tpt;
-
-   // Command line arguments for controlling RAL
-   // (note: its not clear if this ENV will use the RAL)
-   string cli_block_name_str      = "BLKNM";
-   bit    cli_block_name_override = 0;
-   //uvm_reg_block  cli_selected_block;
 
    // Command line arguments for FIRMWARE (Test Program) selection
    // +firmware=<path_to_hexfile_test_program>
@@ -60,65 +45,51 @@ class uvmt_cv32e20_test_cfg_c extends uvm_object;
    bit    cli_uvm_banner_select_override = 0;
    string cli_uvm_banner_name_str        = "";
 
-   // Run-time control
-   bit    run_riscv_gcc_toolchain  = 0;
-   bit    print_uvm_runflow_banner = 0;
-   
-   `uvm_object_utils_begin(uvmt_cv32e20_test_cfg_c)
-      `uvm_field_int(heartbeat_period, UVM_DEFAULT)
-      `uvm_field_int(watchdog_timeout, UVM_DEFAULT)
+   // Run-time control defaults
+   bit            run_riscv_gcc_toolchain  = 0;
+   bit            print_uvm_runflow_banner = 0;
+   ref_model_enum ref_model                = NONE;
 
-      `uvm_field_enum(test_program_type, tpt, UVM_DEFAULT)
-      
-      //`uvm_field_object(cli_selected_block, UVM_DEFAULT)
-      `uvm_field_int(run_riscv_gcc_toolchain, UVM_DEFAULT)
+   `uvm_object_utils_begin(uvmt_cv32e20_test_cfg_c)
+      `uvm_field_int(heartbeat_period,         UVM_DEFAULT)
+      `uvm_field_int(watchdog_timeout,         UVM_DEFAULT)
+      `uvm_field_int(run_riscv_gcc_toolchain,  UVM_DEFAULT)
       `uvm_field_int(print_uvm_runflow_banner, UVM_DEFAULT)
+
+      `uvm_field_enum(test_program_type, tpt,       UVM_DEFAULT)
+      `uvm_field_enum(ref_model_enum,    ref_model, UVM_DEFAULT)
    `uvm_object_utils_end
-   
-   
+
+
    constraint timeouts_default_cons {
       soft startup_timeout  == 100_000_000; // Set to be huge for now so that sim can finish
-      soft heartbeat_period ==    200_000; //  2 us // TODO Set default Heartbeat Monitor period for uvmt_cv32e20_base_test_c
+      soft heartbeat_period ==     200_000; //  2 us // TODO Set default Heartbeat Monitor period for uvmt_cv32e20_base_test_c
       soft watchdog_timeout == 100_000_000; // 10 ms // TODO Set default Watchdog timeout period for uvmt_cv32e20_base_test_c
    }
-   
-   //constraint test_type_default_cons {
-   //  soft tpt == NONE;
-   //}
-   
+
    /**
     * Default constructor.
     */
    extern function new(string name="uvmt_cv32e20_test_cfg");
-   
+
    /**
     * TODO Describe uvmt_cv32e20_test_cfg_c::process_cli_args()
     */
    extern function void process_cli_args();
-   
+
 endclass : uvmt_cv32e20_test_cfg_c
 
 
 function uvmt_cv32e20_test_cfg_c::new(string name="uvmt_cv32e20_test_cfg");
-   
+
    super.new(name);
-   
+
 endfunction : new
 
 
 function void uvmt_cv32e20_test_cfg_c::process_cli_args();
-   
+
    string  cli_block_name_parsed_str           = "";
-   
-   // RAL control
-   cli_block_name_override = 0; //default
-   if (uvm_cmdline_proc.get_arg_value({"+", cli_block_name_str, "="}, cli_block_name_parsed_str)) begin
-      if (cli_block_name_parsed_str != "") begin
-         cli_block_name_override = 1;
-         //cli_selected_block = ral.get_block_by_name(cli_block_name_parsed_str);
-         `uvm_info("TEST_CFG", $sformatf("process_cli_args() RAL block_name=%s", cli_block_name_str), UVM_LOW)
-      end
-   end
 
    // Test program (firmware) selection
    cli_firmware_select_override = 0; // default
@@ -141,8 +112,23 @@ function void uvmt_cv32e20_test_cfg_c::process_cli_args();
       end
    end
 
+   // Select a Reference Model.
+   //  To maintain backward compatibility, +USE_ISS will enable the ImperasDV reference model.
+   //  +USE_RM allows user to select Spike or Imperas or both.
+   //  Unless you specify a Reference Model, you don't get one.
+   if ($test$plusargs("USE_ISS")) begin
+       ref_model = IMPERAS_DV; // backward compatibility
+   end
+   else begin
+       ref_model = NONE;
+       if ($test$plusargs("SPIKE"))   ref_model = SPIKE;
+       if ($test$plusargs("IMPERAS")) ref_model = IMPERAS_DV;
+       if ($test$plusargs("BOTH"))    ref_model = BOTH;
+   end
+   `uvm_info("TEST_CFG", $sformatf("Reference Model selected for this test: %s", ref_model.name()), UVM_NONE)
+
    `uvm_info("TEST_CFG", "process_cli_args() complete", UVM_HIGH)
-   
+
 endfunction : process_cli_args
 
 

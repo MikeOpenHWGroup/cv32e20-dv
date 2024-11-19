@@ -1,5 +1,6 @@
 //
-// Copyright 2022 OpenHW Group
+// Copyright 2022, 2024 OpenHW Group
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 //
 // Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,20 +15,31 @@
 // limitations under the License.
 //
 
-///////////////////////////////////////
-// ImperasDV
-// - The traditional location of the Imperas reference model is under vendor_lib in this repo.
-// - The proposed new location of the Imperas reference model is in an installation directory
-//   that is external to this repo.
+//////////////////////// OLD VERSION //////////////////////////////////////////
+/////////////////////////////////////////
+//// ImperasDV
+//// - The traditional location of the Imperas reference model is under vendor_lib in this repo.
+//// - The proposed new location of the Imperas reference model is in an installation directory
+////   that is external to this repo.
+////
 //
+//+incdir+${IMPERAS_HOME}
+//+incdir+${IMPERAS_HOME}/ImpProprietary/include/host
+//+incdir+${IMPERAS_HOME}/ImpProprietary/source/host/riscvISACOV/source
+//
+////${TBSRC_HOME}/uvmt/uvmt_cv32e20_imperas_riscv_coverage_config.svh
+//-f ${IMPERAS_HOME}/ImpPublic/source/host/rvvi/rvvi.f
+//-f ${IMPERAS_HOME}/ImpProprietary/source/host/idv/idv.f
+//
+//// ImperasDV test bench wrapper
+//${TBSRC_HOME}/uvmt/uvmt_cv32e20_imperas_dv_wrap.sv
 
-+incdir+${IMPERAS_HOME}
-+incdir+${IMPERAS_HOME}/ImpProprietary/include/host
-+incdir+${IMPERAS_HOME}/ImpProprietary/source/host/riscvISACOV/source
+//*////////////////////// NEW VERSION //////////////////////////////////////////
 
-//${TBSRC_HOME}/uvmt/uvmt_cv32e20_imperas_riscv_coverage_config.svh
--f ${IMPERAS_HOME}/ImpPublic/source/host/rvvi/rvvi.f
--f ${IMPERAS_HOME}/ImpProprietary/source/host/idv/idv.f
+// ImperasDV RVVI "templates"
+${RVVI_HOME}/source/host/rvvi/rvviApiPkg.sv
+${RVVI_HOME}/source/host/rvvi/rvviTrace.sv
 
 // ImperasDV test bench wrapper
-${TBSRC_HOME}/uvmt/uvmt_cv32e20_imperas_dv_wrap.sv
+//${TBSRC_HOME}/uvmt/uvmt_cv32e20_imperas_dv_wrap.sv
+

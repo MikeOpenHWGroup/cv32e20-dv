@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
     else {
-      printf("\nEXIT_SUCCESS!\n\n");
+      printf("\n");
       return EXIT_SUCCESS;
     }
 }
