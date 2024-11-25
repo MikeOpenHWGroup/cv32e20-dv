@@ -78,8 +78,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Module wrapper for Imperas DV.
 ////////////////////////////////////////////////////////////////////////////
-// `define USE_ISS
 `ifdef USE_ISS
+  `define USE_ISS_IMPERAS
+`endif // USE_ISS
+
+`ifndef FORMAL
+`ifdef USE_ISS_IMPERAS
 
 `include "idv/idv.svh" // located in $IMPERAS_HOME/ImpProprietary/include/host
 
@@ -542,10 +546,10 @@ module uvmt_cv32e20_imperas_dv_wrap
 //        void'(rvvi.net_push(nmi, nmi));
 //    end
 
-    /////////////////////////////////////////////////////////////////////////////
-    // REF control
-    /////////////////////////////////////////////////////////////////////////////
-    task ref_init;
+  /////////////////////////////////////////////////////////////////////////////
+  // REF control
+  /////////////////////////////////////////////////////////////////////////////
+  task ref_init;
     string test_program_elf;
     reg [31:0] hart_id;
 
@@ -630,6 +634,24 @@ module uvmt_cv32e20_imperas_dv_wrap
     void'(rvviRefMemorySetVolatile('h15001000, 'h15001007)); //TODO: deal with int return value
   endtask // ref_init
 endmodule : uvmt_cv32e20_imperas_dv_wrap
-`endif  // USE_ISS
+`else   // USE_ISS_IMPERAS
+/////////////////////////////////////////////////////////////////////////////
+// Stub for ImperasDV wrapper
+/////////////////////////////////////////////////////////////////////////////
+module uvmt_cv32e20_imperas_dv_wrap import uvm_pkg::*;
+    #( parameter FPU   = 0,
+       parameter ZFINX = 0
+     )
+
+     ( rvviTrace  rvvi ); // RVVI SystemVerilog Interface
+
+  string info_tag = "ImperasDV_stub";
+
+  task ref_init;
+      `uvm_info(info_tag, "Using a \"stub\" in place of ImperasDV.", UVM_NONE)
+  endtask // ref_init
+
+endmodule : uvmt_cv32e20_imperas_dv_wrap
+`endif  // USE_ISS_IMPERAS
 
 `endif // __UVMT_CV32E20_IMPERAS_DV_WRAP_SV__

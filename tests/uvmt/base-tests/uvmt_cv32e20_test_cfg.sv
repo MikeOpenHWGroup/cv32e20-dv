@@ -113,17 +113,20 @@ function void uvmt_cv32e20_test_cfg_c::process_cli_args();
    end
 
    // Select a Reference Model.
-   //  To maintain backward compatibility, +USE_ISS will enable the ImperasDV reference model.
-   //  +USE_RM allows user to select Spike or Imperas or both.
-   //  Unless you specify a Reference Model, you don't get one.
+   //   To maintain backward compatibility, +USE_ISS will enable the ImperasDV reference model.
+   //   +SPIKE, +IMPERAS_DV and +BOTH allows user to select Spike or Imperas or both.
+   //   Unless you specify a Reference Model, you don't get one.
    if ($test$plusargs("USE_ISS")) begin
        ref_model = IMPERAS_DV; // backward compatibility
    end
    else begin
        ref_model = NONE;
-       if ($test$plusargs("SPIKE"))   ref_model = SPIKE;
-       if ($test$plusargs("IMPERAS")) ref_model = IMPERAS_DV;
-       if ($test$plusargs("BOTH"))    ref_model = BOTH;
+       if ( ($test$plusargs("SPIKE")   ) &&
+            ($test$plusargs("IMPERAS") )
+          )                               ref_model = BOTH;
+       if (  $test$plusargs("SPIKE")   )  ref_model = SPIKE;
+       if (  $test$plusargs("IMPERAS") )  ref_model = IMPERAS_DV;
+       if (  $test$plusargs("BOTH")    )  ref_model = BOTH;
    end
    `uvm_info("TEST_CFG", $sformatf("Reference Model selected for this test: %s", ref_model.name()), UVM_NONE)
 
