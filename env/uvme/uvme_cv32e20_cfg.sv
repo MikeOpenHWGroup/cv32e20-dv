@@ -282,6 +282,8 @@ endfunction : new
 
 function void uvme_cv32e20_cfg_c::pre_randomize();
 
+   `uvm_info("CFG", "Executing pre_randomize() of env cfg.", UVM_DEBUG)
+
    if ($test$plusargs("rand_stall_obi_disable")) begin
       int retval;
 

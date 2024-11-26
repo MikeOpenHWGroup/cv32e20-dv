@@ -37,7 +37,7 @@ extern int errno;
 /* write test result of program to this reg */
 #define RESULT_REG 0x20000000
 /* write exit value of program to this reg */
-#define EXIT_REG 0x20000004
+#define EXIT_REG 0x20000000
 
 #define STDOUT_FILENO 1
 

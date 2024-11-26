@@ -336,7 +336,7 @@ function void uvmt_cv32e20_base_test_c::phase_ended(uvm_phase phase);
           `uvm_error("END_OF_TEST", $sformatf("DUT WRAPPER virtual peripheral signaled exit_value=%0h.", evalue))
        end
        else begin
-         `uvm_info("END_OF_TEST", $sformatf("DUT WRAPPER virtual peripheral signaled exit_value=%0h.", evalue), UVM_NONE)
+         `uvm_info("END_OF_TEST", $sformatf("DUT WRAPPER virtual peripheral signaled exit_value=%0h.", evalue), UVM_DEBUG)
        end
      end
 
