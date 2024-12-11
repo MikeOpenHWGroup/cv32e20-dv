@@ -503,6 +503,9 @@ echo_env:
 #   1. Clean all generated files of the C and assembler tests
 #   2. Simulator-specific clean targets are in ./<simulator>.mk
 #   3. clean_bsp target is specified in ../Common.mk
+clean_rtl:
+	rm -rf $(CV_CORE_PKG)
+
 clean_hex:
 	rm -rf $(SIM_TEST_PROGRAM_RESULTS)
 

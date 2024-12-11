@@ -13,7 +13,6 @@ export SHELL = /bin/bash
 CV_CORE_REPO   ?= https://github.com/openhwgroup/cve2
 CV_CORE_BRANCH ?= main
 CV_CORE_HASH   ?= 370793f52488d1022d0554d194ad24f125156acc
-CV_CORE_TAGS   ?= none
 
 CV_VERIF_REPO   ?= https://github.com/MikeOpenHWGroup/core-v-verif
 CV_VERIF_BRANCH ?= no_spike
