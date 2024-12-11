@@ -149,7 +149,7 @@ mk_results:
 
 ################################################################################
 # DSIM compile target
-comp: mk_results $(CV_CORE_PKG) $(SVLIB_PKG) $(CV_VERIF_PKG) rvvi_stub
+comp: mk_results clone_cv_core_rtl $(SVLIB_PKG) $(CV_VERIF_PKG) rvvi_stub
 	@echo "$(BANNER)"
 	@echo "Compiling with DSim..."
 	@echo "$(BANNER)"
