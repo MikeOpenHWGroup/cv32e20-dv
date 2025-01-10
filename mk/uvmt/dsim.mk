@@ -32,6 +32,7 @@ DSIM_WORK              ?= $(SIM_CFG_RESULTS)/dsim_work
 DSIM_IMAGE             ?= dsim.out
 DSIM_RUN_FLAGS         ?=
 DSIM_CODE_COV_SCOPE    ?= $(MAKE_PATH)/../tools/dsim/ccov_scopes.txt
+DSIM_CODE_COV_FLAGS    ?= block
 #DSIM_USE_ISS           ?= YES
 
 DSIM_FILE_LIST         ?= -f $(DV_UVMT_PATH)/uvmt_$(CV_CORE_LC).flist
@@ -121,8 +122,8 @@ DSIM_DMP_FLAGS ?= -waves $(DSIM_DMP_FILE)
 endif
 
 ifneq ($(CCOV), 0)
-	DSIM_COMPILE_ARGS += -code-cov block -code-cov-scope-specs $(DSIM_CODE_COV_SCOPE)
-	DSIM_RUN_FLAGS    += -code-cov block -code-cov-scope-specs $(DSIM_CODE_COV_SCOPE)
+	DSIM_COMPILE_ARGS += -code-cov $(DSIM_CODE_COV_FLAGS) -code-cov-scope-specs $(DSIM_CODE_COV_SCOPE)
+	DSIM_RUN_FLAGS    += -code-cov $(DSIM_CODE_COV_FLAGS) -code-cov-scope-specs $(DSIM_CODE_COV_SCOPE)
 endif
 
 # Special var to point to tool and installation dependent path of DPI headers.
@@ -378,6 +379,9 @@ clean:
 
 # All generated files plus the clone of the RTL
 # TODO: fix the 'clean_embench' targets
-clean_all: clean clean_rtl clean_riscv-dv clean_test_programs clean_bsp clean_compliance clean_dpi_dasm_spike clean_svlib clean_rvvi_stub
+clean_it_all: clean clean_rtl clean_riscv-dv clean_test_programs clean_bsp clean_compliance clean_dpi_dasm_spike clean_svlib clean_rvvi_stub
 	rm -rf $(CV_CORE_PKG)
+
+clean_all:
+	@echo "Please do not clean_all since this dir-tree lacks the ability to recompile the environment."
 
