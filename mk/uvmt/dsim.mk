@@ -188,12 +188,19 @@ gen_ovpsim_ic:
 	fi
 export IMPERAS_TOOLS=$(SIM_RUN_RESULTS)/ovpsim.ic
 
-# Skip compile if COMP is specified and negative
-ifneq ($(call IS_NO,$(COMP)),NO)
+# Skip DSim compile if DSIM_COMP is specified and negative
+ifneq ($(call IS_NO,$(DSIM_COMP)),NO)
 DSIM_SIM_PREREQ = comp
 endif
 
-test: $(DSIM_SIM_PREREQ) hex gen_ovpsim_ic
+# Skip Test-program compile if TEST_PROG_COMP is specified and negative
+ifneq ($(call IS_NO,$(TEST_PROG_COMP)),NO)
+DSIM_SIM_PREREQ += hex
+endif
+
+#test: $(DSIM_SIM_PREREQ) hex gen_ovpsim_ic
+
+test: $(DSIM_SIM_PREREQ)
 	@echo "$(BANNER)"
 	@echo "Simulating with DSim..."
 	@echo "$(BANNER)"
