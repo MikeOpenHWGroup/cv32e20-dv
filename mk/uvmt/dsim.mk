@@ -373,16 +373,18 @@ corev-dv: clean_riscv-dv \
 
 # Metrics dsim cleanup
 clean:
-	rm -f dsim.log
-	rm -f dsim-*.log
-	rm -f metrics_history.db
-	rm -f metrics.db
-	rm -f metrics.xml
-	rm -f trace_core_00_0.log
-	rm -rf dsim_work
-	rm -f dsim.env
-	rm -f $(DSIM_IMAGE)
-	rm -rf $(SIM_RESULTS)
+	@echo "Please do not clean since this dir-tree lacks the ability to recompile the environment."
+
+#	rm -f dsim.log
+#	rm -f dsim-*.log
+#	rm -f metrics_history.db
+#	rm -f metrics.db
+#	rm -f metrics.xml
+#	rm -f trace_core_00_0.log
+#	rm -rf dsim_work
+#	rm -f dsim.env
+#	rm -f $(DSIM_IMAGE)
+#	rm -rf $(SIM_RESULTS)
 
 # All generated files plus the clone of the RTL
 # TODO: fix the 'clean_embench' targets
