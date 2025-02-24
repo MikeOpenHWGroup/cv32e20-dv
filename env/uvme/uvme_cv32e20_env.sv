@@ -45,14 +45,14 @@ class uvme_cv32e20_env_c extends uvm_env;
    uvme_cv32e20_vsqr_c       vsequencer;
 
    // Agents
-   uvma_clknrst_agent_c     clknrst_agent;
-   uvma_interrupt_agent_c   interrupt_agent;
-   uvma_debug_agent_c       debug_agent;
-   uvma_obi_memory_agent_c  obi_memory_instr_agent;
-   uvma_obi_memory_agent_c  obi_memory_data_agent;
-   uvma_cv32e20_core_cntrl_agent_c core_cntrl_agent;
-
-   uvma_rvfi_agent_c#(ILEN,XLEN)      rvfi_agent;
+   uvma_cv32e20_core_cntrl_agent_c  core_cntrl_agent;
+   uvma_isacov_agent_c#(ILEN,XLEN)  isacov_agent;
+   uvma_clknrst_agent_c             clknrst_agent;
+   uvma_interrupt_agent_c           interrupt_agent;
+   uvma_debug_agent_c               debug_agent;
+   uvma_obi_memory_agent_c          obi_memory_instr_agent;
+   uvma_obi_memory_agent_c          obi_memory_data_agent;
+   uvma_rvfi_agent_c#(ILEN,XLEN)    rvfi_agent;
 
    uvmc_rvfi_reference_model reference_model;
 
@@ -387,19 +387,20 @@ endfunction: retrieve_vifs
 
 function void uvme_cv32e20_env_c::assign_cfg();
 
-   uvm_config_db#(uvme_cv32e20_cfg_c)  ::set(this, "*",                       "cfg", cfg);
-   uvm_config_db#(uvma_clknrst_cfg_c)   ::set(this, "*clknrst_agent",         "cfg", cfg.clknrst_cfg);
-   uvm_config_db#(uvma_interrupt_cfg_c) ::set(this, "*interrupt_agent",       "cfg", cfg.interrupt_cfg);
-   uvm_config_db#(uvma_debug_cfg_c)     ::set(this, "debug_agent",            "cfg", cfg.debug_cfg);
-   uvm_config_db#(uvma_obi_memory_cfg_c)::set(this, "obi_memory_instr_agent", "cfg", cfg.obi_memory_instr_cfg);
-   uvm_config_db#(uvma_obi_memory_cfg_c)::set(this, "obi_memory_data_agent",  "cfg", cfg.obi_memory_data_cfg);
+   uvm_config_db#(uvme_cv32e20_cfg_c)           ::set(this, "*",                      "cfg", cfg);
+   uvm_config_db#(uvma_clknrst_cfg_c)           ::set(this, "*clknrst_agent",         "cfg", cfg.clknrst_cfg);
+   uvm_config_db#(uvma_interrupt_cfg_c)         ::set(this, "*interrupt_agent",       "cfg", cfg.interrupt_cfg);
+   uvm_config_db#(uvma_debug_cfg_c)             ::set(this, "debug_agent",            "cfg", cfg.debug_cfg);
+   uvm_config_db#(uvma_obi_memory_cfg_c)        ::set(this, "obi_memory_instr_agent", "cfg", cfg.obi_memory_instr_cfg);
+   uvm_config_db#(uvma_obi_memory_cfg_c)        ::set(this, "obi_memory_data_agent",  "cfg", cfg.obi_memory_data_cfg);
 
-   uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "core_cntrl_agent",       "cfg", cfg);
-   uvm_config_db#(uvma_rvfi_cfg_c#(ILEN,XLEN))::set(this, "*rvfi_agent",      "cfg", cfg.rvfi_cfg);
+   uvm_config_db#(uvma_core_cntrl_cfg_c)        ::set(this, "core_cntrl_agent",       "cfg", cfg);
+   uvm_config_db#(uvma_isacov_cfg_c)            ::set(this, "*isacov_agent",          "cfg", cfg.isacov_cfg);
+   uvm_config_db#(uvma_rvfi_cfg_c#(ILEN,XLEN))  ::set(this, "*rvfi_agent",            "cfg", cfg.rvfi_cfg);
 
    if (cfg.scoreboard_enabled) begin
-      uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "reference_model", "cfg", cfg);
-      uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "*m_rvfi_scoreboard", "cfg", cfg);
+      uvm_config_db#(uvma_core_cntrl_cfg_c)     ::set(this, "reference_model", "cfg", cfg);
+      uvm_config_db#(uvma_core_cntrl_cfg_c)     ::set(this, "*m_rvfi_scoreboard", "cfg", cfg);
    end
 
 endfunction: assign_cfg
@@ -419,14 +420,15 @@ endfunction: assign_cntxt
 
 
 function void uvme_cv32e20_env_c::create_agents();
-
-   clknrst_agent           = uvma_clknrst_agent_c   ::type_id::create("clknrst_agent",          this);
-   interrupt_agent         = uvma_interrupt_agent_c ::type_id::create("interrupt_agent",        this);
-   debug_agent             = uvma_debug_agent_c     ::type_id::create("debug_agent",            this);
-   obi_memory_instr_agent  = uvma_obi_memory_agent_c::type_id::create("obi_memory_instr_agent", this);
-   obi_memory_data_agent   = uvma_obi_memory_agent_c::type_id::create("obi_memory_data_agent",  this);
-   rvfi_agent              = uvma_rvfi_agent_c#(ILEN,XLEN)::type_id::create("rvfi_agent",       this);
-   core_cntrl_agent        = uvma_cv32e20_core_cntrl_agent_c::type_id::create("core_cntrl_agent", this);
+   
+   core_cntrl_agent       = uvma_cv32e20_core_cntrl_agent_c::type_id::create("core_cntrl_agent",       this);
+   isacov_agent           = uvma_isacov_agent_c#(ILEN,XLEN)::type_id::create("isacov_agent",           this);
+   clknrst_agent          = uvma_clknrst_agent_c           ::type_id::create("clknrst_agent",          this);
+   interrupt_agent        = uvma_interrupt_agent_c         ::type_id::create("interrupt_agent",        this);
+   debug_agent            = uvma_debug_agent_c             ::type_id::create("debug_agent",            this);
+   obi_memory_instr_agent = uvma_obi_memory_agent_c        ::type_id::create("obi_memory_instr_agent", this);
+   obi_memory_data_agent  = uvma_obi_memory_agent_c        ::type_id::create("obi_memory_data_agent",  this);
+   rvfi_agent             = uvma_rvfi_agent_c#(ILEN,XLEN)  ::type_id::create("rvfi_agent",             this);
 
 endfunction: create_agents
 
@@ -475,8 +477,17 @@ endfunction: connect_scoreboard
 
 
 function void uvme_cv32e20_env_c::connect_coverage_model();
+   // isacov_agent.monitor.ap.connect(cov_model.exceptions_covg.isacov_mon_export);
+   // isacov_agent.monitor.ap.connect(cov_model.counters_covg.isacov_mon_export);
+   // isacov_agent.monitor.ap.connect(cov_model.interrupt_covg.isacov_mon_export);
+   // isacov_agent.monitor.ap.connect(cov_model.clic_covg.isacov_mon_export);
 
    interrupt_agent.monitor.ap_iss.connect(cov_model.interrupt_covg.interrupt_mon_export);
+   // foreach (rvfi_agent.instr_mon_ap[i]) begin
+   //    rvfi_agent.instr_mon_ap[i].connect(isacov_agent.monitor.rvfi_instr_imp);
+   //    rvfi_agent.instr_mon_ap[i].connect(cov_model.interrupt_covg.interrupt_mon_export);
+   //    rvfi_agent.instr_mon_ap[i].connect(cov_model.clic_covg.clic_mon_export);
+   // end
 
 endfunction: connect_coverage_model
 
