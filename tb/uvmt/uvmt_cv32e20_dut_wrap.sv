@@ -36,9 +36,6 @@ module uvmt_cv32e20_dut_wrap #(
                             parameter int unsigned MHPMCounterWidth  = 40,
                             parameter bit          RV32E             = 1'b0,
                             parameter rv32m_e      RV32M             = RV32MFast,
-                            parameter bit          BranchPredictor   = 1'b0,
-                            parameter int unsigned DmHaltAddr        = 32'h1A11_0800,
-                            parameter int unsigned DmExceptionAddr   = 32'h1A14_0000,
                             // Remaining parameters are used by TB components only
                             parameter int unsigned INSTR_ADDR_WIDTH    =  32,
                             parameter int unsigned INSTR_RDATA_WIDTH   =  32,
@@ -123,9 +120,7 @@ module uvmt_cv32e20_dut_wrap #(
                .MHPMCounterNum   (MHPMCounterNum),
                .MHPMCounterWidth (MHPMCounterWidth),
                .RV32E            (RV32E),
-               .RV32M            (RV32M),
-               .DmHaltAddr       (DmHaltAddr),
-               .DmExceptionAddr  (DmExceptionAddr)
+               .RV32M            (RV32M)
               )
     cv32e20_top_i
         (
@@ -166,7 +161,9 @@ module uvmt_cv32e20_dut_wrap #(
          .irq_nm_i               ( 1'b0/*irq_uvma[0]*/),       // non-maskeable interrupt
 
   // Debug Interface
-         .debug_req_i             (1'b0/*debug_req_uvma*/),
+         .debug_req_i             ( 1'b0/*debug_req_uvma*/),
+         .dm_halt_addr_i          ( 32'h1A11_0800 ),
+         .dm_exception_addr_i     ( 32'h1A14_0000 ),
          .crash_dump_o            (),
 
   // RISC-V Formal Interface

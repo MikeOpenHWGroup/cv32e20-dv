@@ -6,7 +6,7 @@ Please refer to the [README](./README.md) in this directory for instructions on 
 
 ### CORE-V Toolchain
 The recommended toolchain for all CORE-V cores is available from Embecosm
-[here](https://www.embecosm.com/resources/tool-chain-downloads/#corev).
+[here](https://embecosm.com/downloads/tool-chain-downloads/#core-v-top-of-tree-compilers).
 It is recommended that you install this at `/opt/corev`.
 As detailed in [README](./README.md#required-corev-environment-variables), you will need to define a shell variable to point to it:
 ```
@@ -15,7 +15,7 @@ $ export CV_SW_TOOLCHAIN="/opt/riscv"
 
 ### RISC-V Toolchain
 For many CORE-V cores, the standard RISC-V toolchain will work. You can obtain pre-built version for various platforms from Embecosm
-[here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv).
+[here](https://embecosm.com/downloads/tool-chain-downloads/#risc-v-embedded-top-of-tree-compilers).
 It is recommended that you install this at `/opt/riscv` and define a shell variable to point to it:
 ```
 $ export CV_SW_TOOLCHAIN="/opt/riscv"
@@ -23,7 +23,7 @@ $ export CV_SW_TOOLCHAIN="/opt/riscv"
 
 ### LLVM Toolchain
 The core-v-verif testbench also supports usage of an LLVM/Clang toolchain.
-An LLVM toolchain with RISCV32 support built for various Linux binary platforms is available [here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv-stable).
+An LLVM toolchain with RISCV32 support built for various Linux binary platforms is available [here](https://embecosm.com/downloads/tool-chain-downloads/#risc-v-embedded-stable-release-compilers).
 
 All tests and regressions for the CV32E40X and CV32E40S should be buildable and runnable with LLVM/Clang.
 
@@ -44,7 +44,7 @@ default and the PULP toolchain as needed.  The see the comment header in `Common
 see how to set this up.
 
 #### Pre-built PULP Toolchain
-The PULP toolchain for CV32E40P is available [here](https://www.embecosm.com/resources/tool-chain-downloads/#pulp).
+The PULP toolchain for CV32E40P is available [here](https://embecosm.com/downloads/tool-chain-downloads/#pulp-top-of-tree-compilers).
 It is recommended that you install this at /opt/pulp.
 
 #### Building the PULP Toolchain from source
