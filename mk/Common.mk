@@ -725,12 +725,25 @@ spike_lib: $(SPIKE_FESVR_LIB).so $(SPIKE_RISCV_LIB).so
 ###############################################################################
 # Build SVLIB DPI
 
+SVLIB_PKG        := $(CORE_V_VERIF)/vendor_lib/verilab/svlib
+export SVLIB_PKG  = $(CORE_V_VERIF)/vendor_lib/verilab/svlib
+
+
 SVLIB_SRC    = $(SVLIB_PKG)/svlib/src/dpi/svlib_dpi.c
 SVLIB_CFLAGS = -shared -fPIC
 SVLIB_LIB    = $(SVLIB_PKG)/../svlib_dpi.so
 SVLIB_CXX    = gcc
 
+clone_svlib: $(SVLIB_PKG)
+
 svlib: $(SVLIB_PKG)
+
+clean_svlib:
+	rm -rf $(SVLIB_LIB)
+	rm -rf $(SVLIB_PKG)
+
+$(SVLIB_PKG):
+	$(CLONE_SVLIB_CMD)
 	@echo "$(BANNER)"
 	@echo "Building $(SVLIB_PKG)"
 	@echo "$(BANNER)"
