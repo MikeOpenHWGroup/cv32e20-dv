@@ -12,8 +12,11 @@ export SHELL = /bin/bash
 
 CV_CORE_REPO   ?= https://github.com/openhwgroup/cve2
 CV_CORE_BRANCH ?= main
-CV_CORE_HASH   ?= 370793f52488d1022d0554d194ad24f125156acc
-CV_CORE_TAG    ?= none
+CV_CORE_HASH   ?= ca6bc06
+
+CV_VERIF_REPO   ?= https://github.com/MikeOpenHWGroup/core-v-verif
+CV_VERIF_BRANCH ?= no_spike
+CV_VERIF_HASH   ?= 77d47dd
 
 RISCVDV_REPO    ?= https://github.com/google/riscv-dv
 RISCVDV_BRANCH  ?= master

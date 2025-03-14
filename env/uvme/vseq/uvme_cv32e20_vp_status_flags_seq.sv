@@ -87,17 +87,36 @@ task uvme_cv32e20_vp_status_flags_seq_c::vp_body(uvma_obi_memory_mon_trn_c mon_t
 
    if (mon_trn.access_type == UVMA_OBI_MEMORY_ACCESS_WRITE) begin
       `uvm_info("VP_VSEQ", $sformatf("Call to virtual peripheral 'vp_status_flags':\n%s", mon_trn.sprint()), UVM_DEBUG)
+      // get_vp_index() returns the "register number" from a given virtual peripheral.
+      // For example, this virtual peripheral (status flags) has two registers:
+      // 0 : assert pass/fail
+      // 1 : return exit_value
       case (get_vp_index(mon_trn))
          0: begin
-            if (mon_trn.data[0] == 1) begin
-               cv32e20_cntxt.vp_status_vif.exit_value   = mon_trn.data >> 1;
-               cv32e20_cntxt.vp_status_vif.exit_valid   = 1;
-               `uvm_info("VP_VSEQ", $sformatf("virtual peripheral: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_LOW)
+            // Register (IDX) 0: assert pass/fail
+            cv32e20_cntxt.vp_status_vif.exit_value = mon_trn.data[0];
+            cv32e20_cntxt.vp_status_vif.exit_valid = 1;
+            if (mon_trn.data[0] == 0) begin
+               `uvm_info("VP_IDX_0", $sformatf("VP Status Flags: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_NONE)
             end
+            else begin
+               `uvm_error("VP_IDX_0", $sformatf("VP Status Flags: TEST FAILED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value))
+            end
+         end
+         1: begin
+            // Register (IDX) 1: exit_value
+            cv32e20_cntxt.vp_status_vif.exit_value = mon_trn.data[0];
+            cv32e20_cntxt.vp_status_vif.exit_valid = 1;
+            `uvm_info("VP_IDX_1", $sformatf("VP Status Flags: TEST PASSED WITH CODE %h", cv32e20_cntxt.vp_status_vif.exit_value), UVM_NONE)
+         end
+         default: begin
+            // No VP Status Flags Registers beyond this point.
+            `uvm_fatal("VP_IDX_X", $sformatf("VP Status Flags: Unknown VP Register (idx), get_vp_index(mon_trn)"))
          end
       endcase
    end
    else if (mon_trn.access_type == UVMA_OBI_MEMORY_ACCESS_READ) begin
+      // Reading the VP Status Flags returns zero
       slv_rsp.rdata = 0;
    end
 
