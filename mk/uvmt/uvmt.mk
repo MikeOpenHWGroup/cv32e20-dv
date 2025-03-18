@@ -179,20 +179,19 @@ export COREV_DV_ROOT         = $(COREVDV_PKG)
 export CV_CORE_COREV_DV_ROOT = $(CV_CORE_COREVDV_PKG)
 
 # RISC-V Foundation's RISC-V Compliance Test-suite
-COMPLIANCE_PKG   := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/riscv/riscv-compliance
+COMPLIANCE_PKG := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/riscv/riscv-compliance
 
 # EMBench benchmarking suite
-EMBENCH_PKG	:= $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/embench
-EMBENCH_TESTS	:= $(CORE_V_VERIF)/$(CV_CORE_LC)/tests/programs/embench
+EMBENCH_PKG    := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/embench
+EMBENCH_TESTS  := $(CORE_V_VERIF)/$(CV_CORE_LC)/tests/programs/embench
 
 # Disassembler
-#DPI_DASM_PKG       := $(CORE_V_VERIF)/lib/dpi_dasm
-#DPI_DASM_SPIKE_PKG := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/dpi_dasm_spike
-DPI_DASM_PKG       := $(CV_VERIF_PKG)/lib/dpi_dasm
-DPI_DASM_SPIKE_PKG := $(CV_VERIF_PKG)/vendor_lib/dpi_dasm_spike
-export DPI_DASM_PKG        = $(CV_VERIF_PKG)/lib/dpi_dasm
-export DPI_DASM_ROOT       = $(DPI_DASM_PKG)
-export DPI_DASM_SPIKE_ROOT = $(DPI_DASM_SPIKE_PKG)
+DPI_DASM_PKG               := $(CV_VERIF_PKG)/lib/dpi_dasm
+DPI_DASM_SPIKE_PKG         := $(CV_VERIF_PKG)/vendor_lib/dpi_dasm_spike
+export DPI_DASM_PKG         = $(CV_VERIF_PKG)/lib/dpi_dasm
+export DPI_DASM_SPIKE_PKG   = $(CV_VERIF_PKG)/vendor_lib/dpi_dasm_spike
+export DPI_DASM_ROOT        = $(DPI_DASM_PKG)
+export DPI_DASM_SPIKE_ROOT  = $(DPI_DASM_SPIKE_PKG)
 
 # TB source files for the CV32E core
 #TBSRC_HOME  := $(CORE_V_VERIF)/$(CV_CORE_LC)/tb
@@ -214,12 +213,6 @@ export DESIGN_RTL_DIR = $(CV_CORE_PKG)/rtl
 
 RTLSRC_HOME   := $(CV_CORE_PKG)/rtl
 RTLSRC_INCDIR := $(RTLSRC_HOME)/include
-
-# SVLIB
-#SVLIB_PKG        := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/verilab/svlib
-#export SVLIB_PKG  = $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/verilab/svlib
-SVLIB_PKG        := $(CORE_V_VERIF)/vendor_lib/verilab/svlib
-export SVLIB_PKG  = $(CORE_V_VERIF)/vendor_lib/verilab/svlib
 
 # CORE-V-VERIF
 #CV_VERIF_PKG        := $(CORE_V_VERIF)/$(CV_CORE_LC)/vendor_lib/openhwgroup_core-v-verif
@@ -271,8 +264,6 @@ clone_compliance: $(COMPLIANCE_PKG)
 clone_dpi_dasm_spike:
 	$(CLONE_DPI_DASM_SPIKE_CMD)
 
-clone_svlib: $(SVLIB_PKG)
-
 $(CV_CORE_PKG):
 	$(CLONE_CV_CORE_CMD)
 
@@ -287,9 +278,6 @@ $(EMBENCH_PKG):
 
 $(DPI_DASM_SPIKE_PKG):
 	$(CLONE_DPI_DASM_SPIKE_CMD)
-
-$(SVLIB_PKG):
-	$(CLONE_SVLIB_CMD)
 
 $(CV_VERIF_PKG):
 	$(CLONE_CV_VERIF_CMD)
@@ -456,7 +444,8 @@ endif
 endif
 
 ################################################################################
-# Display all the shell env vars defined here (handy debug tool).
+# Display all the shell env vars defined in the Makefiles (handy debug tool).
+# Note that some of these vars may be defined in 'included' Makefiles.
 echo_env:
 	@echo "ENV vars set in uvmt.mk:"
 	@echo "   CV_CORE_LC                        = $(CV_CORE_LC)"
@@ -531,9 +520,6 @@ clean_embench:
 
 clean_dpi_dasm_spike:
 	rm -rf $(DPI_DASM_SPIKE_PKG)
-
-clean_svlib:
-	rm -rf $(SVLIB_PKG)
 
 clean_core_v_verif:
 	rm -rf $(CV_VERIF_PKG)
