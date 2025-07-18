@@ -29,7 +29,7 @@ on the command line for describing options and arguments available.
 This is a simple wrapper to redirect a make call to any core's UVMT Makefile.  This redirection script
 simply requires that you either:
 - specify CV_CORE in your environment -or-
-- specify CV_CORE on the maekeuvmt command line as an override
+- specify CV_CORE on the makeuvmt command line as an override
 
 The script will then invoke make in the following directory:<br>
 > \<core-v-verif>/$(CV_CORE)/sim/uvmt
