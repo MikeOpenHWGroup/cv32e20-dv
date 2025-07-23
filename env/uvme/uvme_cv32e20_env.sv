@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+//
+// Copyright (c) 2025 Eclipse Foundation
 // Copyright 2020,2022 OpenHW Group
 // Copyright 2020 Datum Technology Corporation
 // Copyright 2020 Silicon Labs, Inc.
@@ -223,8 +225,9 @@ function void uvme_cv32e20_env_c::connect_phase(uvm_phase phase);
       if (cfg.is_active) begin
          assemble_vsequencer();
       end
-
+      
       if (cfg.cov_model_enabled) begin
+         `uvm_info(this.get_type_name(), "Connecting coverage model", UVM_LOW)
          connect_coverage_model();
       end
    end
@@ -477,17 +480,9 @@ endfunction: connect_scoreboard
 
 
 function void uvme_cv32e20_env_c::connect_coverage_model();
-   // isacov_agent.monitor.ap.connect(cov_model.exceptions_covg.isacov_mon_export);
-   // isacov_agent.monitor.ap.connect(cov_model.counters_covg.isacov_mon_export);
-   // isacov_agent.monitor.ap.connect(cov_model.interrupt_covg.isacov_mon_export);
-   // isacov_agent.monitor.ap.connect(cov_model.clic_covg.isacov_mon_export);
 
    interrupt_agent.monitor.ap_iss.connect(cov_model.interrupt_covg.interrupt_mon_export);
-   // foreach (rvfi_agent.instr_mon_ap[i]) begin
-   //    rvfi_agent.instr_mon_ap[i].connect(isacov_agent.monitor.rvfi_instr_imp);
-   //    rvfi_agent.instr_mon_ap[i].connect(cov_model.interrupt_covg.interrupt_mon_export);
-   //    rvfi_agent.instr_mon_ap[i].connect(cov_model.clic_covg.clic_mon_export);
-   // end
+   rvfi_agent.instr_monitor.ap.connect(isacov_agent.monitor.rvfi_instr_imp);
 
 endfunction: connect_coverage_model
 

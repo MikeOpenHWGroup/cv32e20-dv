@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+//
+// Copyright (c) 2025 Eclipse Foundation
 // Copyright 2020,2022 OpenHW Group
 // Copyright 2020 Datum Technology Corporation
 // Copyright 2020 Silicon Labs, Inc.
@@ -229,7 +231,6 @@ constraint cve2_riscv_cons {
       isacov_cfg.seq_instr_x2_enabled       == 1;
       isacov_cfg.reg_crosses_enabled        == 0;
       isacov_cfg.reg_hazards_enabled        == 1;
-      // isacov_cfg.decoder                    == ISA_SUPPORT;
 
       rvfi_cfg.nret                      == 1;
       unified_traps                      == 1;
@@ -247,7 +248,7 @@ constraint cve2_riscv_cons {
          clknrst_cfg.trn_log_enabled           == 1;
          interrupt_cfg.trn_log_enabled         == 1;
          debug_cfg.trn_log_enabled             == 1;
-         isacov_cfg.trn_log_enabled            == 0;
+         isacov_cfg.trn_log_enabled            == 1;
          obi_memory_instr_cfg.trn_log_enabled  == 1;
          obi_memory_data_cfg.trn_log_enabled   == 1;
          rvfi_cfg.trn_log_enabled              == 1;
