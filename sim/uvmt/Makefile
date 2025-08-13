@@ -25,7 +25,7 @@
 # "Constants"
 MAKE                  = make
 MAKE_PATH            := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-export CORE_V_VERIF   = $(abspath $(MAKE_PATH)/../../..)
+export CORE_V_VERIF   = $(abspath $(MAKE_PATH)/../..)
 export CV_CORE       ?= cv32e20
 
 DPI_DASM_SPIKE_REPO  ?= https://github.com/riscv/riscv-isa-sim.git

@@ -115,7 +115,7 @@ task uvmt_cv32e20_firmware_test_c::run_phase(uvm_phase phase);
    end
 
    phase.raise_objection(this);
-   `uvm_info("TEST", "Started RUN", UVM_NONE)
+   `uvm_info("TEST", "run_phase has raised objection...", UVM_HIGH)
    // The firmware is expected to write exit status and pass/fail indication to the Virtual Peripheral
    wait (
           (vp_status_vif.exit_valid    == 1'b1) ||
@@ -124,8 +124,16 @@ task uvmt_cv32e20_firmware_test_c::run_phase(uvm_phase phase);
         );
    repeat (100) @(posedge env_cntxt.clknrst_cntxt.vif.clk);
    //TODO: exit_value will not be valid - need to add a latch in the vp_status_vif
-   `uvm_info("TEST", $sformatf("Finished RUN: exit status is %0h", vp_status_vif.exit_value), UVM_NONE)
+   begin
+       string mystr = "Finished run_phase:\n";
+       mystr = {mystr,$sformatf("              exit_value  is %0h\n", vp_status_vif.exit_value)};
+       mystr = {mystr,$sformatf("              exit_valid  is %0h\n", vp_status_vif.exit_valid)};
+       mystr = {mystr,$sformatf("              test_failed is %0h\n", vp_status_vif.tests_failed)};
+       mystr = {mystr,$sformatf("              test_passed is %0h\n", vp_status_vif.tests_passed)};
+       `uvm_info("TEST", $sformatf("%s", mystr), UVM_DEBUG)
+   end
    phase.drop_objection(this);
+   `uvm_info("TEST", "run_phase has dropped objection...", UVM_HIGH)
 
 endtask : run_phase
 

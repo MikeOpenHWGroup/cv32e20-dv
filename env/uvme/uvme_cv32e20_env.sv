@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+//
+// Copyright (c) 2025 Eclipse Foundation
 // Copyright 2020,2022 OpenHW Group
 // Copyright 2020 Datum Technology Corporation
 // Copyright 2020 Silicon Labs, Inc.
@@ -27,7 +29,7 @@ typedef class uvme_cv32e20_vp_status_flags_seq_c;
 typedef class uvme_cv32e20_vp_rand_num_seq_c;
 
 import "DPI-C" function longint read_symbol(input string symbol, output longint unsigned address);
-import "DPI-C" function read_elf(input string filename);
+import "DPI-C" function void       read_elf(input string filename);
 /**
  * Top-level component that encapsulates, builds and connects all other
  * CV32E20 environment components.
@@ -45,14 +47,14 @@ class uvme_cv32e20_env_c extends uvm_env;
    uvme_cv32e20_vsqr_c       vsequencer;
 
    // Agents
-   uvma_clknrst_agent_c     clknrst_agent;
-   uvma_interrupt_agent_c   interrupt_agent;
-   uvma_debug_agent_c       debug_agent;
-   uvma_obi_memory_agent_c  obi_memory_instr_agent;
-   uvma_obi_memory_agent_c  obi_memory_data_agent;
-   uvma_cv32e20_core_cntrl_agent_c core_cntrl_agent;
-
-   uvma_rvfi_agent_c#(ILEN,XLEN)      rvfi_agent;
+   uvma_cv32e20_core_cntrl_agent_c  core_cntrl_agent;
+   uvma_isacov_agent_c#(ILEN,XLEN)  isacov_agent;
+   uvma_clknrst_agent_c             clknrst_agent;
+   uvma_interrupt_agent_c           interrupt_agent;
+   uvma_debug_agent_c               debug_agent;
+   uvma_obi_memory_agent_c          obi_memory_instr_agent;
+   uvma_obi_memory_agent_c          obi_memory_data_agent;
+   uvma_rvfi_agent_c#(ILEN,XLEN)    rvfi_agent;
 
    uvmc_rvfi_reference_model reference_model;
 
@@ -196,7 +198,9 @@ function void uvme_cv32e20_env_c::build_phase(uvm_phase phase);
       create_env_components();
 
       if (cfg.is_active) begin
-         load_binary();
+         if ($test$plusargs("USE_ISS")) begin
+            load_binary();
+         end
          create_vsequencer();
       end
 
@@ -221,8 +225,9 @@ function void uvme_cv32e20_env_c::connect_phase(uvm_phase phase);
       if (cfg.is_active) begin
          assemble_vsequencer();
       end
-
+      
       if (cfg.cov_model_enabled) begin
+         `uvm_info(this.get_type_name(), "Connecting coverage model", UVM_LOW)
          connect_coverage_model();
       end
    end
@@ -385,19 +390,20 @@ endfunction: retrieve_vifs
 
 function void uvme_cv32e20_env_c::assign_cfg();
 
-   uvm_config_db#(uvme_cv32e20_cfg_c)  ::set(this, "*",                       "cfg", cfg);
-   uvm_config_db#(uvma_clknrst_cfg_c)   ::set(this, "*clknrst_agent",         "cfg", cfg.clknrst_cfg);
-   uvm_config_db#(uvma_interrupt_cfg_c) ::set(this, "*interrupt_agent",       "cfg", cfg.interrupt_cfg);
-   uvm_config_db#(uvma_debug_cfg_c)     ::set(this, "debug_agent",            "cfg", cfg.debug_cfg);
-   uvm_config_db#(uvma_obi_memory_cfg_c)::set(this, "obi_memory_instr_agent", "cfg", cfg.obi_memory_instr_cfg);
-   uvm_config_db#(uvma_obi_memory_cfg_c)::set(this, "obi_memory_data_agent",  "cfg", cfg.obi_memory_data_cfg);
+   uvm_config_db#(uvme_cv32e20_cfg_c)           ::set(this, "*",                      "cfg", cfg);
+   uvm_config_db#(uvma_clknrst_cfg_c)           ::set(this, "*clknrst_agent",         "cfg", cfg.clknrst_cfg);
+   uvm_config_db#(uvma_interrupt_cfg_c)         ::set(this, "*interrupt_agent",       "cfg", cfg.interrupt_cfg);
+   uvm_config_db#(uvma_debug_cfg_c)             ::set(this, "debug_agent",            "cfg", cfg.debug_cfg);
+   uvm_config_db#(uvma_obi_memory_cfg_c)        ::set(this, "obi_memory_instr_agent", "cfg", cfg.obi_memory_instr_cfg);
+   uvm_config_db#(uvma_obi_memory_cfg_c)        ::set(this, "obi_memory_data_agent",  "cfg", cfg.obi_memory_data_cfg);
 
-   uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "core_cntrl_agent",       "cfg", cfg);
-   uvm_config_db#(uvma_rvfi_cfg_c#(ILEN,XLEN))::set(this, "*rvfi_agent",      "cfg", cfg.rvfi_cfg);
+   uvm_config_db#(uvma_core_cntrl_cfg_c)        ::set(this, "core_cntrl_agent",       "cfg", cfg);
+   uvm_config_db#(uvma_isacov_cfg_c)            ::set(this, "*isacov_agent",          "cfg", cfg.isacov_cfg);
+   uvm_config_db#(uvma_rvfi_cfg_c#(ILEN,XLEN))  ::set(this, "*rvfi_agent",            "cfg", cfg.rvfi_cfg);
 
    if (cfg.scoreboard_enabled) begin
-      uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "reference_model", "cfg", cfg);
-      uvm_config_db#(uvma_core_cntrl_cfg_c)::set(this, "*m_rvfi_scoreboard", "cfg", cfg);
+      uvm_config_db#(uvma_core_cntrl_cfg_c)     ::set(this, "reference_model", "cfg", cfg);
+      uvm_config_db#(uvma_core_cntrl_cfg_c)     ::set(this, "*m_rvfi_scoreboard", "cfg", cfg);
    end
 
 endfunction: assign_cfg
@@ -417,14 +423,15 @@ endfunction: assign_cntxt
 
 
 function void uvme_cv32e20_env_c::create_agents();
-
-   clknrst_agent           = uvma_clknrst_agent_c   ::type_id::create("clknrst_agent",          this);
-   interrupt_agent         = uvma_interrupt_agent_c ::type_id::create("interrupt_agent",        this);
-   debug_agent             = uvma_debug_agent_c     ::type_id::create("debug_agent",            this);
-   obi_memory_instr_agent  = uvma_obi_memory_agent_c::type_id::create("obi_memory_instr_agent", this);
-   obi_memory_data_agent   = uvma_obi_memory_agent_c::type_id::create("obi_memory_data_agent",  this);
-   rvfi_agent              = uvma_rvfi_agent_c#(ILEN,XLEN)::type_id::create("rvfi_agent",       this);
-   core_cntrl_agent        = uvma_cv32e20_core_cntrl_agent_c::type_id::create("core_cntrl_agent", this);
+   
+   core_cntrl_agent       = uvma_cv32e20_core_cntrl_agent_c::type_id::create("core_cntrl_agent",       this);
+   isacov_agent           = uvma_isacov_agent_c#(ILEN,XLEN)::type_id::create("isacov_agent",           this);
+   clknrst_agent          = uvma_clknrst_agent_c           ::type_id::create("clknrst_agent",          this);
+   interrupt_agent        = uvma_interrupt_agent_c         ::type_id::create("interrupt_agent",        this);
+   debug_agent            = uvma_debug_agent_c             ::type_id::create("debug_agent",            this);
+   obi_memory_instr_agent = uvma_obi_memory_agent_c        ::type_id::create("obi_memory_instr_agent", this);
+   obi_memory_data_agent  = uvma_obi_memory_agent_c        ::type_id::create("obi_memory_data_agent",  this);
+   rvfi_agent             = uvma_rvfi_agent_c#(ILEN,XLEN)  ::type_id::create("rvfi_agent",             this);
 
 endfunction: create_agents
 
@@ -475,6 +482,7 @@ endfunction: connect_scoreboard
 function void uvme_cv32e20_env_c::connect_coverage_model();
 
    interrupt_agent.monitor.ap_iss.connect(cov_model.interrupt_covg.interrupt_mon_export);
+   rvfi_agent.instr_monitor.ap.connect(isacov_agent.monitor.rvfi_instr_imp);
 
 endfunction: connect_coverage_model
 
@@ -502,8 +510,8 @@ function void uvme_cv32e20_env_c::load_binary();
     $value$plusargs("vp_interrupt_timer=%0h",cfg.vp_interrupt_timer);
     $value$plusargs("vp_debug_control=%0h", cfg.vp_debug_control);
 
-    if ($value$plusargs("elf_file=%s", binary))
-    begin
+    if ($value$plusargs("elf_file=%s", binary)) begin
+        `uvm_info("cv32e20_env", $sformatf("\n\t\t\tReading ELF: %s", binary) , UVM_NONE)
         read_elf(binary);
         vp_status_flags_symbol_present = ! read_symbol("tohost", cfg.vp_status_flags_symbol);
         if (vp_status_flags_symbol_present) begin
