@@ -44,7 +44,7 @@
 +incdir+${DV_UVMT_PATH}
 +incdir+${DV_UVMT_PATH}/../../tests/uvmt
 +incdir+${DV_UVMT_PATH}/../../tests/uvmt/base-tests
-+incdir+${DV_UVMT_PATH}/../../tests/uvmt/compliance-tests
++incdir+${DV_UVMT_PATH}/../../tests/uvmt/firmware-tests
 +incdir+${DV_UVMT_PATH}/../../tests/uvmt/vseq
 
 // CV32E20 tests (includes constants/macros/types meant for test bench)
