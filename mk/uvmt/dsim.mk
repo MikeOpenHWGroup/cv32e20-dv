@@ -46,6 +46,10 @@ else
     DSIM_RUN_FLAGS += +DISABLE_OVPSIM
 endif
 
+ifeq ($(WRITE_RVFI_AP),YES)
+    DSIM_RUN_FLAGS += +WRITE_RVFI_AP
+endif
+
 ifeq ($(call IS_YES,$(SPIKE)),YES)
     DSIM_RUN_FLAGS += +SPIKE
 endif
