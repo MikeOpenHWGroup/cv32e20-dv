@@ -14,9 +14,9 @@ CV_CORE_REPO   ?= https://github.com/openhwgroup/cve2
 CV_CORE_BRANCH ?= main
 CV_CORE_HASH   ?= 8d4cf8b
 
-CV_VERIF_REPO   ?= https://github.com/MikeOpenHWGroup/core-v-verif
-CV_VERIF_BRANCH ?= no_spike
-CV_VERIF_HASH   ?= 77d47dd
+CV_VERIF_REPO   ?= https://github.com/cairo-caplan/core-v-verif.git
+CV_VERIF_BRANCH ?= no_spike_cv32e20
+CV_VERIF_HASH   ?= aea9fc8
 
 RISCVDV_REPO    ?= https://github.com/google/riscv-dv
 RISCVDV_BRANCH  ?= master
