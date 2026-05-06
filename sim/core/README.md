@@ -76,50 +76,24 @@ Results are written to:
 generation (~30 min, requires `uv` and `sail_riscv_sim`). The ELFs are
 deterministic in their inputs, so they can be produced once and reused.
 
-The bundle to use is recorded in `sim/.act4-elfs-pin` (one line,
-fingerprint hex). Certify-side CI reads the pin and downloads the
-matching `elfs-<pin>` GitHub Release.
-
 Targets:
-
 ```
-make elfs-fingerprint        # 12-char SHA256 prefix over ACT4 inputs (prebuild side)
-make elfs-package            # tarball ELFs into dist/act4-elfs-cv32e20-<fp>.tar.gz
-make download-prebuilt-elfs  # fetch the bundle for the pin and extract it
-make certify-prebuilt        # run certify against an already-extracted ELF tree
+make elfs-package      # tar+gzip ELFs to tests/act4/act4-elfs-cv32e20.tar.gz
+make certify-prebuilt  # extract that tarball and run certify (skips `gen`)
 ```
 
-Typical CI usage:
+Maintainer flow (publish a new tarball):
 ```
-make download-prebuilt-elfs   # reads sim/.act4-elfs-pin, curls elfs-<pin> from GitHub
-make certify-prebuilt         # verilate + run all ELFs
-```
-
-Local override (skip GitHub fetch, point at a local or http(s) bundle):
-```
-make download-prebuilt-elfs URL=file:///path/to/act4-elfs-cv32e20-<fp>.tar.gz
+make gen           # generate ELFs via ACT4 + Sail
+make elfs-package  # produce tests/act4/act4-elfs-cv32e20.tar.gz
 ```
 
-Source repo / auth for the default GitHub fetch path:
-- The `<owner>/<repo>` is parsed from the `origin` git remote.
-  Override with `GH_REPO=owner/repo` to fetch from a different repo
-  (e.g. `GH_REPO=openhwgroup/cv32e20-dv`).
-- Public releases need no auth. For private repos, set `GITHUB_TOKEN`
-  (a PAT locally, or `${{ secrets.GITHUB_TOKEN }}` in GitHub Actions).
-
-#### Refreshing the prebuilt bundle
-
-When `ACT4_HASH` or the `gen:` recipe changes, the next bundle will
-have a new fingerprint. To roll the change forward:
-
-1. Run `make gen` then `make elfs-package` (or trigger the prebuild
-   workflow). This produces `dist/act4-elfs-cv32e20-<fp>.tar.gz` and
-   prints the new fingerprint.
-2. Replace the line in `sim/.act4-elfs-pin` with the new fingerprint.
-3. Commit the bumped pin alongside whichever input change triggered it.
-
-`make elfs-fingerprint` requires Sail to be installed (it calls
-`sail_riscv_sim --version`).
+CI flow (consume an existing tarball):
+```
+# tests/act4/act4-elfs-cv32e20.tar.gz must be present
+# (committed, downloaded as a release artifact, or restored from cache)
+make certify-prebuilt
+```
 
 <!--
 Running the testbench with Metrics [dsim](https://metrics.ca)

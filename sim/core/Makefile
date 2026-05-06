@@ -357,14 +357,7 @@ gen-certify: gen certify
 
 ###############################################################################
 # Prebuilt-ELF support (used by CI to skip the slow `gen` step).
-#
-# Fingerprint: 12-char SHA256 prefix over the inputs that determine ELF content
-# (ACT4_HASH, the gen recipe, sail version). Same value is computed in CI and
-# used as the GitHub Release tag for the prebuilt bundle.
-
-.PHONY: elfs-fingerprint
-elfs-fingerprint:
-	@$(MAKE_PATH)/../scripts/elfs_fingerprint.sh
+# Builds elfs and puts them in tarball gzip
 
 .PHONY: elfs-package
 elfs-package:
@@ -372,31 +365,22 @@ elfs-package:
 	    echo "Error: no ELFs at $(certification_PROGRAM_PATH). Run 'make gen' first."; \
 	    exit 1; \
 	fi
-	@set -e; \
-	FP=$$($(MAKE_PATH)/../scripts/elfs_fingerprint.sh); \
-	OUT=$(CV32E20_DV)/dist/act4-elfs-cv32e20-$$FP.tar.gz; \
-	mkdir -p $(CV32E20_DV)/dist; \
-	cd $(ACT4_PKG) && \
-	tar --sort=name --owner=0 --group=0 --numeric-owner \
+	@mkdir -p $(CV32E20_DV)/tests/act4
+	@tar --sort=name --owner=0 --group=0 --numeric-owner \
 	    --mtime='UTC 2020-01-01' \
-	    -cf - work/cv32e20/elfs | gzip -9 > $$OUT; \
-	$(MAKE_PATH)/../scripts/elfs_manifest.py $$OUT $$FP > $$OUT.manifest.json; \
-	echo "Bundle:   $$OUT"; \
-	echo "Manifest: $$OUT.manifest.json"
-
-# Download a prebuilt bundle into $(certification_PROGRAM_PATH).
-# Override source with: make download-prebuilt-elfs URL=file:///path/to/bundle.tar.gz
-.PHONY: download-prebuilt-elfs
-download-prebuilt-elfs:
-	@URL="$(URL)" $(MAKE_PATH)/../scripts/download_prebuilt_elfs.sh
+	    -C $(certification_PROGRAM_PATH) \
+	    -czf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz rv32i
+	@echo "Tests:   $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz"
 
 # Run certify against a prebuilt ELF tree (no `make gen` step).
 # CI uses this; local devs can keep using `make gen-certify`.
 .PHONY: certify-prebuilt
 certify-prebuilt:
-	@if [ ! -d "$(certification_PROGRAM_PATH)/rv32i" ]; then \
-	    echo "Error: no prebuilt ELFs at $(certification_PROGRAM_PATH)."; \
-	    echo "Run 'make download-prebuilt-elfs' first."; \
+	@if [ ! -f "$(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz" ]; then \
+	    echo "Error: no prebuilt tarball at $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz."; \
+	    echo "Run 'make elfs-package' or download a prebuilt tarball first."; \
 	    exit 2; \
 	fi
-	@$(MAKE) certify
+	@tar -xzf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz \
+	    -C $(CV32E20_DV)/tests/act4
+	@$(MAKE) certify certification_PROGRAM_PATH=$(CV32E20_DV)/tests/act4
