@@ -263,7 +263,10 @@ clean-test-programs:
 	find $(CV32E20_DV)/tests/programs -name "*.objdump" -exec rm {} \;
 	find $(CV32E20_DV)/tests/programs -name "corev_*.S" -exec rm {} \;
 
-clean-all-targets: clean-dist clean-cloned clean-sim-results clean-test-programs verilator-clean
+clean-act4-unpacked:
+	rm -rf $(CV32E20_DV)/tests/act4/unpacked_tests
+
+clean-all-targets: clean-dist clean-cloned clean-sim-results clean-test-programs verilator-clean clean-act4-unpacked
 
 clean-dist:
 	rm -rf riscv-fesvr riscv-isa-sim
@@ -368,6 +371,7 @@ elfs-package:
 	@mkdir -p $(CV32E20_DV)/tests/act4
 	@tar --sort=name --owner=0 --group=0 --numeric-owner \
 	    --mtime='UTC 2020-01-01' \
+	    --exclude='*.objdump' \
 	    -C $(certification_PROGRAM_PATH) \
 	    -czf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz rv32i
 	@echo "Tests:   $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz"
@@ -381,6 +385,7 @@ certify-prebuilt:
 	    echo "Run 'make elfs-package' or download a prebuilt tarball first."; \
 	    exit 2; \
 	fi
+	@mkdir -p $(CV32E20_DV)/tests/act4/unpacked_tests
 	@tar -xzf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz \
-	    -C $(CV32E20_DV)/tests/act4
-	@$(MAKE) certify certification_PROGRAM_PATH=$(CV32E20_DV)/tests/act4
+	    -C $(CV32E20_DV)/tests/act4/unpacked_tests
+	@$(MAKE) certify certification_PROGRAM_PATH=$(CV32E20_DV)/tests/act4/unpacked_tests
