@@ -287,8 +287,8 @@ clean_all: clean-all-banner clean-all-targets
 certification_PROGRAM_PATH    = $(ACT4_PKG)/work/cv32e20/elfs
 certification_PROGRAM_RELPATH = ../../vendor_lib/riscv-arch-test/act4/work/cv32e20/elfs
 
-# Optional extension filter: narrows certify to a single extension.
-# Usage: make certify FILTER=Zicsr
+# Optional extension filter: narrows certify scan to a subdirectory.
+# Usage: make certify FILTER=rv32i/Zicsr  or  FILTER=priv/InterruptsSm
 FILTER ?=
 
 ###############################################################################
@@ -300,7 +300,7 @@ gen: $(ACT4_PKG)
 	@$(MAKE) -C $(ACT4_PKG) clean
 	@echo "* Generating ACT4.0 tests..."
 	@$(MAKE) -C $(ACT4_PKG) \
-		EXTENSIONS=I,M,C,Zca,Zicsr,Zifencei \
+		EXTENSIONS=I,M,C,Zca,Zicsr,Zifencei,InterruptsSm,MisalignZca,Misalign,ExceptionsSm,ExceptionsZc \
 		CONFIG_FILES=config/cores/cve2/cv32e20/test_config.yaml
 	@echo "* Tests generated in: $(certification_PROGRAM_PATH)"
 
@@ -315,7 +315,7 @@ certify: verilate
 	SUMMARY="$(VERI_LOG_DIR)/certification_summary.txt"; \
 	echo "RESULT  TEST" > "$$SUMMARY"; \
 	echo "------  ----" >> "$$SUMMARY"; \
-	ROOT="$(certification_PROGRAM_PATH)/rv32i$(if $(FILTER),/$(FILTER),)"; \
+	ROOT="$(certification_PROGRAM_PATH)$(if $(FILTER),/$(FILTER),)"; \
 	ELFS="$$(find -L "$$ROOT" \( -type f -o -type l \) -a \( -iname '*.elf' -o -iname '*.elf32' \) 2>/dev/null | sort)"; \
 	if [ -z "$$ELFS" ]; then \
 	  echo "No .elf files found under $$ROOT"; \
