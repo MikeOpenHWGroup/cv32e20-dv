@@ -680,11 +680,7 @@ module mm_ram
         if (!rst_ni)
             rnd_num <= 32'h0;
         else if (rnd_num_req)
-`ifndef VERILATOR
             rnd_num <= $urandom();
-`else
-            rnd_num <= 32'h0;
-`endif
    end
 
    // -------------------------------------------------------------
@@ -715,11 +711,7 @@ module mm_ram
                if(debugger_wdata[15]) //If random start
                  // then set max random delay range to wdata[14:0]
                  // note, if wdata[14:0] == 0, then assign max random range to 128
-`ifndef VERILATOR
                  debugger_start_cnt_q <= $urandom_range(1,~|debugger_wdata[14:0] ? 128 : debugger_wdata[14:0]);
-`else
-                 debugger_start_cnt_q <= 1;
-`endif
                else
                  // else, the delay is determined by wdata[14:0]
                  //  note, if wdata[14:0] == 0, then assign value to 1
@@ -733,11 +725,7 @@ module mm_ram
                  if(debugger_wdata[29]) // If random pulse width
                    // then set max random pulse width to wdata[28:16]
                    //  note, if wdata[28:16] ==0, then assign max to 128
-`ifndef VERILATOR
                    debug_req_duration_q <= $urandom_range(1,~|debugger_wdata[28:16] ? 128 : debugger_wdata[28:16]);
-`else
-                   debugger_start_cnt_q <= 1;
-`endif
                 else
                    // else, the pulse is determined by wdata[28:16]
                    //  note, if wdata[28:16]==0, then set pulse width to 1
