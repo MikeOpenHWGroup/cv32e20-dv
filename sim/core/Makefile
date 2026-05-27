@@ -263,7 +263,10 @@ clean-test-programs:
 	find $(CV32E20_DV)/tests/programs -name "*.objdump" -exec rm {} \;
 	find $(CV32E20_DV)/tests/programs -name "corev_*.S" -exec rm {} \;
 
-clean-all-targets: clean-dist clean-cloned clean-sim-results clean-test-programs verilator-clean
+clean-act4-unpacked:
+	rm -rf $(CV32E20_DV)/tests/act4/unpacked_tests
+
+clean-all-targets: clean-dist clean-cloned clean-sim-results clean-test-programs verilator-clean clean-act4-unpacked
 
 clean-dist:
 	rm -rf riscv-fesvr riscv-isa-sim
@@ -354,3 +357,35 @@ certify: verilate
 
 .PHONY: gen-certify
 gen-certify: gen certify
+
+###############################################################################
+# Prebuilt-ELF support (used by CI to skip the slow `gen` step).
+# Builds elfs and puts them in tarball gzip
+
+.PHONY: elfs-package
+elfs-package:
+	@if [ ! -d "$(certification_PROGRAM_PATH)/rv32i" ]; then \
+	    echo "Error: no ELFs at $(certification_PROGRAM_PATH). Run 'make gen' first."; \
+	    exit 1; \
+	fi
+	@mkdir -p $(CV32E20_DV)/tests/act4
+	@tar --sort=name --owner=0 --group=0 --numeric-owner \
+	    --mtime='UTC 2020-01-01' \
+	    --exclude='*.objdump' \
+	    -C $(certification_PROGRAM_PATH) \
+	    -czf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz rv32i
+	@echo "Tests:   $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz"
+
+# Run certify against a prebuilt ELF tree (no `make gen` step).
+# CI uses this; local devs can keep using `make gen-certify`.
+.PHONY: certify-prebuilt
+certify-prebuilt:
+	@if [ ! -f "$(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz" ]; then \
+	    echo "Error: no prebuilt tarball at $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz."; \
+	    echo "Run 'make elfs-package' or download a prebuilt tarball first."; \
+	    exit 2; \
+	fi
+	@mkdir -p $(CV32E20_DV)/tests/act4/unpacked_tests
+	@tar -xzf $(CV32E20_DV)/tests/act4/act4-elfs-cv32e20.tar.gz \
+	    -C $(CV32E20_DV)/tests/act4/unpacked_tests
+	@$(MAKE) certify certification_PROGRAM_PATH=$(CV32E20_DV)/tests/act4/unpacked_tests
