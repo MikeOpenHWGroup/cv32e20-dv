@@ -205,12 +205,7 @@ module mm_ram
     logic [31:0]                   rnd_num;
 
     //random or monitor interrupt request
-    logic                          rnd_irq;
-`ifdef VERILATOR
-    // riscv_random_interrupt_generator is `ifndef VERILATOR; under Verilator
-    // rnd_irq has no driver. Tie it to 0 explicitly so irq_o is fully defined.
-    assign rnd_irq = 1'b0;
-`endif
+    logic                          rnd_irq = 1'b0;
 
     // used by dump_signature methods
     string                         sig_file;
@@ -500,6 +495,12 @@ module mm_ram
                 end else if (data_addr_i == MMADDR_MTIMECMPH) begin
                     select_rdata_d = CLINT;
                     clint_rdata_d  = mtimecmp_q[63:32];
+                end else if (data_addr_i == MMADDR_SIG_VERSION) begin
+                    select_rdata_d = CLINT;
+                    clint_rdata_d  = SIG_VERSION_VAL;
+                end else if (data_addr_i == MMADDR_SIG_PLATFORM) begin
+                    select_rdata_d = CLINT;
+                    clint_rdata_d  = 32'(sig_platform_q);
                 end else
                     select_rdata_d = ERR;
 
@@ -592,9 +593,8 @@ module mm_ram
             mtime_q    <= '0;
             mtimecmp_q <= '1;
         end else begin
-            mtime_q <= mtime_q + 64'd1;
-            if (mtime_we_lo)    mtime_q[31:0]     <= clint_wdata;
-            if (mtime_we_hi)    mtime_q[63:32]    <= clint_wdata;
+            mtime_q[31:0]  <= mtime_we_lo  ? clint_wdata : (mtime_q + 64'd1)[31:0];
+            mtime_q[63:32] <= mtime_we_hi  ? clint_wdata : (mtime_q + 64'd1)[63:32];
             if (mtimecmp_we_lo) mtimecmp_q[31:0]  <= clint_wdata;
             if (mtimecmp_we_hi) mtimecmp_q[63:32] <= clint_wdata;
         end
