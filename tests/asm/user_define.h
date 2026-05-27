@@ -5,7 +5,8 @@
 .section .data
 .global test_results
 test_results:
-	.word 000000001
+#	.word 000000001
+	.word 000000000
 
 #TODO: figure out how to move this to the end of the program
 #.section .text
