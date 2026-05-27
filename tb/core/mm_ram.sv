@@ -173,6 +173,7 @@ module mm_ram
     logic                          mtimecmp_we_lo, mtimecmp_we_hi;
     logic [31:0]                   clint_wdata;
     logic                          mtip;
+    logic [63:0]                   mtime_next;
     logic [31:0]                   clint_rdata_d, clint_rdata_q;
 
             // cycle counting
@@ -583,7 +584,8 @@ module mm_ram
     end
 
     // MTIP (mip bit 7) is level-sensitive: asserted while mtime >= mtimecmp.
-    assign mtip     = (mtime_q >= mtimecmp_q);
+    assign mtime_next = mtime_q + 64'd1;
+    assign mtip       = (mtime_q >= mtimecmp_q);
     assign irq_o    = irq_q | sig_platform_q | {{24{1'b0}}, mtip, 7'b0} | (rnd_irq << RND_IRQ_ID);
 
     // CLINT machine timer: free-running mtime; MTIP via mtime/mtimecmp compare.
@@ -593,8 +595,8 @@ module mm_ram
             mtime_q    <= '0;
             mtimecmp_q <= '1;
         end else begin
-            mtime_q[31:0]  <= mtime_we_lo  ? clint_wdata : (mtime_q + 64'd1)[31:0];
-            mtime_q[63:32] <= mtime_we_hi  ? clint_wdata : (mtime_q + 64'd1)[63:32];
+            mtime_q[31:0]  <= mtime_we_lo  ? clint_wdata : mtime_next[31:0];
+            mtime_q[63:32] <= mtime_we_hi  ? clint_wdata : mtime_next[63:32];
             if (mtimecmp_we_lo) mtimecmp_q[31:0]  <= clint_wdata;
             if (mtimecmp_we_hi) mtimecmp_q[63:32] <= clint_wdata;
         end
