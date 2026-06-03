@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
-//
 // Copyright 2020,2022 OpenHW Group
 // Copyright 2020 Silicon Labs, Inc.
 // Copyright 2025 Thales DIS France SAS
@@ -23,10 +21,8 @@
 `define __UVMT_CV32E20_UVM_MACROS_INC_SV__
 
 // Simple inclusion of the uvm_macros.svh file into compilation scope.
-// This should only be used in Xcelium where automatic load of UVM does not
-// include the macros definition file.
-// use of this include file "first" in the simulator compilation filelist
-// ensures all macros are properly defined for usage
+// Use of this include file "first" in the simulator compilation filelist
+// ensures all macros are properly defined for usage.
 `include "uvm_macros.svh"
 
 `define ASSERT_WARNING(msg)\
