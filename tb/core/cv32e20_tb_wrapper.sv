@@ -18,16 +18,17 @@
 
 module cv32e20_tb_wrapper
     #(parameter // Parameters used by TB
-                INSTR_RDATA_WIDTH = 32,
-                RAM_ADDR_WIDTH    = 20,
-                BOOT_ADDR         = 'h80,
-                DM_HALTADDRESS    = 32'h1A11_0800,
-                HART_ID           = 32'h0000_0000,
+                INSTR_RDATA_WIDTH   = 32,
+                RAM_ADDR_WIDTH      = 20,
+                BOOT_ADDR           = 'h80,
+                DM_HALT_ADDR        = 32'h1A11_0800,
+                DM_EXCEPTION_ADDR   = 32'h1A14_0000,
+                HART_ID             = 32'h0000_0000,
                 // Parameters used by DUT
-                MHPMCounterNum    = 10,
-                MHPMCounterWidth  = 40,
-                RV32E             = 1'b0,
-                RV32M             = 2 // RV32MFast
+                MHPMCounterNum      = 10,
+                MHPMCounterWidth    = 40,
+                RV32E               = 1'b0,
+                RV32M               = 2 // RV32MFast
     ) (
      input logic         clk_i,
      input logic         rst_ni,
@@ -104,31 +105,31 @@ module cv32e20_tb_wrapper
 
          // Interrupts from mm_ram virtual interrupt peripheral
          // mip bit layout: MSI=3, MTI=7, MEI=11, fast/local=16..31
-         .irq_software_i         ( irq_from_mm_ram[3]      ),
-         .irq_timer_i            ( irq_from_mm_ram[7]      ),
-         .irq_external_i         ( irq_from_mm_ram[11]     ),
-         .irq_fast_i             ( irq_from_mm_ram[31:16]  ),
+         .irq_software_i         ( irq_from_mm_ram[3]    ),
+         .irq_timer_i            ( irq_from_mm_ram[7]    ),
+         .irq_external_i         ( irq_from_mm_ram[11]   ),
+         .irq_fast_i             ( irq_from_mm_ram[31:16]),
          .irq_nm_i               (  1'b0                 ),       // non-maskeable interrupt
 
          .debug_req_i            ( debug_req             ),
-         .dm_halt_addr_i         ( DM_HALTADDRESS        ),
-	 .dm_exception_addr_i    ( DM_EXCEPTIONADDRESS   ),
+         .dm_halt_addr_i         ( DM_HALT_ADDR          ),
+         .dm_exception_addr_i    ( DM_EXCEPTION_ADDR     ),
          .crash_dump_o           (                       ),
 
          // CPU Control Signals
          .fetch_enable_i         ( fetch_enable_i        ),
          .core_sleep_o           (                       )
-	 
        );
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
         #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
+          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
+         )
     mm_ram_inst
         (.clk_i          ( clk_i                                     ),
          .rst_ni         ( rst_ni                                    ),
-         .dm_halt_addr_i ( DM_HALTADDRESS                            ),
+         .dm_halt_addr_i ( DM_HALT_ADDR                              ),
 
          .instr_req_i    ( instr_req                                 ),
          .instr_addr_i   ( { {10{1'b0}},
@@ -158,6 +159,7 @@ module cv32e20_tb_wrapper
          .tests_passed_o ( tests_passed_o                            ),
          .tests_failed_o ( tests_failed_o                            ),
          .exit_valid_o   ( exit_valid_o                              ),
-         .exit_value_o   ( exit_value_o                              ));
+         .exit_value_o   ( exit_value_o                              )
+        );
 
-endmodule // cv32e20_tb_wrapper
+endmodule : cv32e20_tb_wrapper

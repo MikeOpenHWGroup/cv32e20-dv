@@ -22,7 +22,9 @@
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH    = 22,
-      parameter BOOT_ADDR         = 'h4000 // must be 256-byte aligned; raised from 'h2000 to satisfy .align 14 in I-jal test
+      parameter BOOT_ADDR         = 'h4000, // must be 256-byte aligned; raised from 'h2000 to satisfy .align 14 in I-jal test
+      parameter DM_HALT_ADDR      = 32'h1A11_0800,
+      parameter DM_EXCEPTION_ADDR = 32'h1A14_0000
      );
 
     const int CLK_PHASE_HI        = 5;
@@ -175,7 +177,8 @@ module tb_top
           .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH    (RAM_ADDR_WIDTH),
           .BOOT_ADDR         (BOOT_ADDR),
-          .DM_HALTADDRESS    (32'h1A11_0800),
+          .DM_HALT_ADDR      (DM_HALT_ADDR),
+          .DM_EXCEPTION_ADDR (DM_EXCEPTION_ADDR),
           // Parameters used by DUT
           .MHPMCounterNum    (10),
           .MHPMCounterWidth  (40),
