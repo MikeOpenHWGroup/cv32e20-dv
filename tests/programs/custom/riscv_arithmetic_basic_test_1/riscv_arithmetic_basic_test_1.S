@@ -11372,6 +11372,9 @@ init_machine_mode:
 instr_end:
                   nop
 
+.section .data
+.align 6; .global tohost; tohost: .dword 0;
+.align 6; .global fromhost; fromhost: .dword 0;
 .section .user_stack,"aw",@progbits;
 .align 2
 user_stack_start:
