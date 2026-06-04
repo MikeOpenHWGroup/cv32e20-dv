@@ -53,8 +53,8 @@ volatile int glb_minstret_end = 0;
 // generic loop counter
 volatile int wait_cnt = 0;
 
-#define TEST_PASSED  *(volatile int *)0x20000000 = 1
-#define TEST_FAILED  *(volatile int *)0x20000000 = 2
+#define TEST_PASSED  *(volatile int *)0x20000000 = 123456789
+#define TEST_FAILED  *(volatile int *)0x20000000 = 1
 
 extern int __stack_start;
 typedef union {
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 
     printf("------------------------\n");
     printf("Note: tests after this point are know to fail - finished for now...\n");
-    return EXIT_SUCCESS;
+    TEST_PASSED;
 
     printf("------------------------\n");
     printf(" Test3: EBREAKS\n");
@@ -545,7 +545,7 @@ int main(int argc, char *argv[])
     check_debug_status(121, glb_hart_status);
 
     printf("\n\nTEST DELIBERATELY ENDED PREMATURELY (several tests still outstanding...)\n\n");
-    _exit(0);
+    TEST_PASSED;
 
     printf("------------------------\n");
     printf("Test 18: Single stepping\n");
