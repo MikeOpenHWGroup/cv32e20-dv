@@ -176,6 +176,7 @@ module tb_top
           .RAM_ADDR_WIDTH    (RAM_ADDR_WIDTH),
           .BOOT_ADDR         (BOOT_ADDR),
           .DM_HALTADDRESS    (32'h1A11_0800),
+          .DM_EXCEPTIONADDRESS(32'h1A14_0000),
           // Parameters used by DUT
           .MHPMCounterNum    (10),
           .MHPMCounterWidth  (40),

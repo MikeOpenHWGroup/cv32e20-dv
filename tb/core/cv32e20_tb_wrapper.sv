@@ -18,11 +18,12 @@
 
 module cv32e20_tb_wrapper
     #(parameter // Parameters used by TB
-                INSTR_RDATA_WIDTH = 32,
-                RAM_ADDR_WIDTH    = 20,
-                BOOT_ADDR         = 'h80,
-                DM_HALTADDRESS    = 32'h1A11_0800,
-                HART_ID           = 32'h0000_0000,
+                INSTR_RDATA_WIDTH  = 32,
+                RAM_ADDR_WIDTH     = 20,
+                BOOT_ADDR          = 'h80,
+                DM_HALTADDRESS     = 32'h1A11_0800,
+                DM_EXCEPTIONADDRESS = 32'h1A14_0000,
+                HART_ID            = 32'h0000_0000,
                 // Parameters used by DUT
                 MHPMCounterNum    = 10,
                 MHPMCounterWidth  = 40,
@@ -131,9 +132,7 @@ module cv32e20_tb_wrapper
          .dm_halt_addr_i ( DM_HALTADDRESS                            ),
 
          .instr_req_i    ( instr_req                                 ),
-         .instr_addr_i   ( { {10{1'b0}},
-                             instr_addr[RAM_ADDR_WIDTH-1:0]
-                           }                                         ),
+         .instr_addr_i   ( instr_addr                                 ),
          .instr_rdata_o  ( instr_rdata                               ),
          .instr_rvalid_o ( instr_rvalid                              ),
          .instr_gnt_o    ( instr_gnt                                 ),

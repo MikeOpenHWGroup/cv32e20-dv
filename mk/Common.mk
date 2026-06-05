@@ -477,6 +477,8 @@ FIRMWARE_UNIT_TEST_OBJS   =  	$(addsuffix .o, \
 	@echo "* Generating hexfile, readelf and objdump files"
 	@echo "$(BANNER)"
 	$(RISCV_EXE_PREFIX)objcopy -O verilog \
+		--change-section-address .debugger-0x19D50800 \
+		--change-section-address .debugger_exception-0x19D50800 \
 		$< \
 		$@
 	$(RISCV_EXE_PREFIX)readelf -a $< > $*.readelf
