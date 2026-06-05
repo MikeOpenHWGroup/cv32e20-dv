@@ -130,6 +130,9 @@ void check_ebreak_status(char tag[], int exp_value)
     printf("ERROR: check_ebreak_status(\"%s\", %d): Tag=\"%s\", glb_ebreak_status=%d, exp_value=%d \n\n",
            tag, exp_value, tag, glb_ebreak_status, exp_value);
     TEST_FAILED;
+  } else {
+    printf("INFO: successful check_ebreak_status(\"%s\", %d): Tag=\"%s\", glb_ebreak_status=%d, exp_value=%d \n\n",
+           tag, exp_value, tag, glb_ebreak_status, exp_value);
   }
 }
 void check_illegal_insn_status(char tag[], int exp_value)
@@ -334,10 +337,6 @@ int main(int argc, char *argv[])
     if(temp != 0x0){printf("ERROR: MSCONTEXT Read\n");TEST_FAILED;}
 
     printf("------------------------\n");
-    printf("Note: tests after this point are know to fail - finished for now...\n");
-    TEST_PASSED;
-
-    printf("------------------------\n");
     printf(" Test3: EBREAKS\n");
     // Do not expect or allow any more illegal instructions
     glb_expect_illegal_insn = 0;
@@ -389,6 +388,9 @@ int main(int argc, char *argv[])
           TEST_FAILED;
       }
     }
+    printf("Note: tests after this point are know to fail - finished for now...\n");
+    TEST_PASSED;
+
     printf("   ...detected Halt Request.\n");
     check_debug_status(41, glb_hart_status);
 
