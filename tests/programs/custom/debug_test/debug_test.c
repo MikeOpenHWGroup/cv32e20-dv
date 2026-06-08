@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
           TEST_FAILED;
       }
     }
-    printf("Note: tests after this point are know to fail - finished for now...\n");
+    printf("Note: tests after this point are known to fail - finished for now...\n");
     TEST_PASSED;
 
     printf("   ...detected Halt Request.\n");
