@@ -134,7 +134,7 @@ module cv32e20_tb_wrapper
     mm_ram_inst
         (.clk_i          ( clk_i                                     ),
          .rst_ni         ( rst_ni                                    ),
-         .dm_halt_addr_i ( DM_HALT_ADDR                              ),
+         .dm_halt_addr_i ( DM_HALTADDRESS                            ),
 
          .instr_req_i    ( instr_req                                 ),
          // Pass the FULL instruction address: mm_ram needs the upper bits to

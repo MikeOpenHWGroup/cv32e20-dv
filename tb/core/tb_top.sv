@@ -32,7 +32,7 @@ module tb_top;
     localparam int          DBG_ADDR_WIDTH      = 18;
     // The boot-address of the CVE2 must be 256-byte aligned and must match start of text block in bsp/link.ld
     // Raised from 'h2000 to satisfy .align 14 in I-jal test (ACT4)
-    localparam logic [31:0] BOOT_ADDR           = 'h4000; // must be 256-byte aligned; raised from 'h2000 to satisfy .align 14 in I-jal test (ACT4)
+    localparam logic [31:0] BOOT_ADDR           = 'h4000;
     // Debugger memory remap parameters.  The debugger sections are linked at
     // high addresses (.debugger @0x1A11_0800, .debugger_exception/.stack
     // @0x1A14_0000) that lie far outside the RAM array.  mm_ram remaps run-time
