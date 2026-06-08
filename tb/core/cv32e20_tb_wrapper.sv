@@ -110,10 +110,10 @@ module cv32e20_tb_wrapper
 
          // Interrupts from mm_ram virtual interrupt peripheral
          // mip bit layout: MSI=3, MTI=7, MEI=11, fast/local=16..31
-         .irq_software_i         ( irq_from_mm_ram[3]      ),
-         .irq_timer_i            ( irq_from_mm_ram[7]      ),
-         .irq_external_i         ( irq_from_mm_ram[11]     ),
-         .irq_fast_i             ( irq_from_mm_ram[31:16]  ),
+         .irq_software_i         ( irq_from_mm_ram[3]    ),
+         .irq_timer_i            ( irq_from_mm_ram[7]    ),
+         .irq_external_i         ( irq_from_mm_ram[11]   ),
+         .irq_fast_i             ( irq_from_mm_ram[31:16]),
          .irq_nm_i               (  1'b0                 ),       // non-maskeable interrupt
 
          .debug_req_i            ( debug_req             ),
@@ -129,11 +129,12 @@ module cv32e20_tb_wrapper
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
         #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
+          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
+         )
     mm_ram_inst
         (.clk_i          ( clk_i                                     ),
          .rst_ni         ( rst_ni                                    ),
-         .dm_halt_addr_i ( DM_HALTADDRESS                            ),
+         .dm_halt_addr_i ( DM_HALT_ADDR                              ),
 
          .instr_req_i    ( instr_req                                 ),
          // Pass the FULL instruction address: mm_ram needs the upper bits to
@@ -166,6 +167,7 @@ module cv32e20_tb_wrapper
          .tests_passed_o ( tests_passed_o                            ),
          .tests_failed_o ( tests_failed_o                            ),
          .exit_valid_o   ( exit_valid_o                              ),
-         .exit_value_o   ( exit_value_o                              ));
+         .exit_value_o   ( exit_value_o                              )
+        );
 
-endmodule // cv32e20_tb_wrapper
+endmodule : cv32e20_tb_wrapper
