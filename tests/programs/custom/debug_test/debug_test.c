@@ -388,9 +388,6 @@ int main(int argc, char *argv[])
           TEST_FAILED;
       }
     }
-    printf("Note: tests after this point are known to fail - finished for now...\n");
-    TEST_PASSED;
-
     printf("   ...detected Halt Request.\n");
     check_debug_status(41, glb_hart_status);
 
@@ -546,7 +543,13 @@ int main(int argc, char *argv[])
     }
     check_debug_status(121, glb_hart_status);
 
-    printf("\n\nTEST DELIBERATELY ENDED PREMATURELY (several tests still outstanding...)\n\n");
+    // NOTE: Tests 18-24 (single-step, irq-in-debug, fence-in-debug, triggers)
+    // are SKIPPED for now.  They were written against cv32e40p semantics and
+    // need porting to CV32E20, which implements U-mode and writes the faulting
+    // instruction into mtval on illegal-instruction exceptions.  Deferred
+    // pending CV32E20 debug-feature updates (incl. possible U-mode deprecation).
+    // The suite currently passes Tests 1-17 and 21.
+    printf("\n\nTests 18-24 skipped (pending CV32E20 debug-feature port) - ending here.\n\n");
     TEST_PASSED;
 
     printf("------------------------\n");
