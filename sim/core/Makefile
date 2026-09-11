@@ -297,10 +297,12 @@ clean-test-programs:
 clean-act4-unpacked:
 	rm -rf $(CV32E20_DV)/tests/act4/unpacked_tests
 
-clean-all-targets: clean-dist clean-cloned clean-sim-results clean-test-programs verilator-clean clean-act4-unpacked
+clean-all-targets: clean-spike clean-cloned clean-sim-results clean-test-programs verilator-clean clean-act4-unpacked
 
-clean-dist:
-	rm -rf riscv-fesvr riscv-isa-sim
+# Rules for building Spike are in mk/Common.mk
+# TODO: is this where Spike should live?
+clean-spike:
+	rm -rf $(CV32E20_DV)/tools/spike
 
 clean-cloned:
 	rm -rf $(CV_CORE_PKG) $(CORE_V_VERIF)

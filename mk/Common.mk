@@ -538,7 +538,7 @@ ifeq ($(TEST_FIXED_ELF),1)
 	cp $(TEST_TEST_DIR)/$(TEST).elf $@
 else
 ifeq ($(TEST_ACT),1)
-%.elf: $(TEST_FILES)
+%.elf: $(TEST_FILES) $(wildcard $(BSP)/*.S $(BSP)/*.c $(BSP)/*.h $(BSP)/link.ld)
 	mkdir -p $(SIM_TEST_PROGRAM_RESULTS)
 	make bsp ACT=1
 	@echo "$(BANNER)"
@@ -560,7 +560,7 @@ ifeq ($(TEST_ACT),1)
 #		-lcv-verif
 
 else
-%.elf: $(TEST_FILES)
+%.elf: $(TEST_FILES) $(wildcard $(BSP)/*.S $(BSP)/*.c $(BSP)/*.h $(BSP)/link.ld)
 	mkdir -p $(SIM_TEST_PROGRAM_RESULTS)
 	make bsp
 	@echo "$(BANNER)"
@@ -795,6 +795,7 @@ $(SPIKE_FESVR_LIB).so $(SPIKE_RISCV_LIB).so:
 	@echo "$(BANNER)"
 	@echo "Building SPIKE"
 	@echo "$(BANNER)"
+	[ -d $(SPIKE_PATH) ] || $(MAKE) core-v-verif
 	mkdir -p $(SPIKE_PATH)/build;
 	[ ! -f $(SPIKE_PATH)/build/config.log ] && cd $(SPIKE_PATH)/build && ../configure --prefix=$(SPIKE_INSTALL_DIR) || true
 	make -C $(SPIKE_PATH)/build/ -j $(NUM_JOBS) yaml-cpp-static;
@@ -850,7 +851,8 @@ rvvi_stub:
 	@echo "$(BANNER)"
 	@echo "Building $(RVVI_STUB)"
 	@echo "$(BANNER)"
-	$(RVVI_STUB_CXX) $(RVVI_STUB_CFLAGS) $(RVVI_STUB_SRC) -I$(DPI_INCLUDE) -o $(RVVI_STUB_LIB)
+	$(RVVI_STUB_CXX) $(RVVI_STUB_CFLAGS) $(RVVI_STUB_SRC) -I$(DPI_INCLUDE) -o $(RVVI_STUB_LIB).$$$$.tmp && \
+ 	mv -f $(RVVI_STUB_LIB).$$$$.tmp $(RVVI_STUB_LIB)
 
 #endend
 

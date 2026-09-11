@@ -93,34 +93,14 @@ module cv32e20_tb_wrapper
     logic        rvfi_ext_debug_req;
     logic [63:0] rvfi_ext_mcycle;
 
-    // Whitebox probe: cve2_core.sv computes {mcause_q[5:0], 3'b101} for an
-    // asynchronous-interrupt entry retirement (3'b011 for a synchronous
-    // exception entry, 3'b000 otherwise) in its internal rvfi_stage_intr
-    // pipeline, but only the LSB of that value reaches the top-level 1-bit
-    // rvfi_intr port. RVFI_STAGES=1 for this core, so rvfi_stage_intr[0] is
-    // exactly time-aligned with rvfi_valid/rvfi_intr. spike_tandem needs the
-    // full value to inject interrupts into Spike (see docs/spike-tandem.md).
+    // Whitebox probes required for RVFI (aka cross-module references or XMRs).
+    // Refer to docs/spike-tandem.md for details.
+
+    // 'rvfi_intr' only exposed LSB and Spike tandem needs the full value.
     wire [8:0] rvfi_intr_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_intr[0];
-
-    // Whitebox probe: cve2_core.sv computes a one-shot debug-entry cause tag
-    // in its internal rvfi_dbg (captured_debug_valid ? captured_debug_cause :
-    // 0, cleared as soon as the next instruction enters ID), pipelined into
-    // rvfi_stage_dbg[]. RVFI_STAGES=1 here, so index [0] is exactly
-    // time-aligned with this retirement, same reasoning as rvfi_intr_cause
-    // above. Cause encoding (cve2_pkg.sv DBG_CAUSE_EBREAK/TRIGGER/HALTREQ/
-    // STEP = 1/2/3/4) matches Spike's own DCSR_CAUSE_* 1:1, so it can be
-    // forwarded verbatim. The top-level rvfi_ext_debug_req port is
-    // deliberately NOT used for this: it is a raw, level-held echo of the
-    // debug_req_i pin with no cause information, not a one-shot entry-exact
-    // tag, and using it would risk Spike entering debug mode a retirement or
-    // more before the RTL does. See docs/spike-tandem.md.
     wire [3:0] rvfi_dbg_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg[0];
-
-    // Whitebox probe of the RTL's own debug_mode state, for an independent
-    // cross-check that Spike and the RTL agree on debug-mode occupancy at
-    // every retirement (not just entry) - see spike_tandem.sv's
-    // compare_retirement().
-    wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.debug_mode;
+    //wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.debug_mode;
+    wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg_mode[0];
 `endif
 
     // irq signals (driven from mm_ram virtual interrupt peripheral)
@@ -128,7 +108,6 @@ module cv32e20_tb_wrapper
     logic [0:4]                   irq_id_in;
     logic                         irq_ack;
     logic                         irq_sec;
-
 
     // interrupts (only timer for now)
     assign irq_sec     = '0;
@@ -174,7 +153,7 @@ module cv32e20_tb_wrapper
          .irq_timer_i            ( irq_from_mm_ram[7]    ),
          .irq_external_i         ( irq_from_mm_ram[11]   ),
          .irq_fast_i             ( irq_from_mm_ram[31:16]),
-         .irq_nm_i               (  1'b0                 ),       // non-maskeable interrupt
+         .irq_nm_i               ( 1'b0                  ),       // non-maskeable interrupt
 
          .debug_req_i            ( debug_req             ),
          .dm_halt_addr_i         ( DM_HALTADDRESS        ),
@@ -227,11 +206,6 @@ module cv32e20_tb_wrapper
          .dm_halt_addr_i ( DM_HALTADDRESS                            ),
 
          .instr_req_i    ( instr_req                                 ),
-         // Pass the FULL instruction address: mm_ram needs the upper bits to
-         // detect and remap the debugger region (DM_HALTADDRESS .. ).  Truncating
-         // to RAM_ADDR_WIDTH here (as was previously done) stripped the 0x1A11_xxxx
-         // /0x1A14_xxxx tags so debug fetches missed the remap and read low RAM.
-         // (The data port already passes the full address -- see data_addr_i.)
          .instr_addr_i   ( instr_addr                                ),
          .instr_rdata_o  ( instr_rdata                               ),
          .instr_rvalid_o ( instr_rvalid                              ),
