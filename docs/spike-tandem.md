@@ -121,7 +121,7 @@ mirrors the RTL configuration in `spike_tandem_init()`:
   writes suppressed, `tinfo` not present (values from the proven `cve2`
   profile in core-v-verif's `rvfi_spike.sv`).
 - **Counter CSR reads**: `csr_counters_injection` makes Spike adopt the RTL
-  value when the program reads free-running counters (cycle/mcycle/mip), so
+  value when the program reads free-running counters (cycle/mcycle), so
   these do not cause false mismatches.
 
 ## HPM counter/event injection
@@ -149,8 +149,8 @@ logic itself cannot be caught this way. This is unavoidable for
 (`NumCyclesLSU`, `NumCyclesIF`, `NumCyclesWFI`, `NumCyclesDivWait` -
 `mhpmcounter3/4/11/12`), which depend on pipeline/memory timing a functional
 ISS has no model of - these stay forwarded.
-- `mhpmcounter3/4/11/12` and `mhpmevent3..31` are the only ones
-forwarded via `counter_csr`.
+- `mhpmcounter3/4(h)` and `mhpmevent11..31(h)` and `mhpmevent3..31`
+are forwarded via `counter_csr`.
 
 ## HPM counter/event independent modeling (mhpmcounter5..10)
 
@@ -325,7 +325,7 @@ with no dependency on Spike's own sources, so it only rebuilds when those
 does nothing.  Force a rebuild either by removing the `.so`s first:
 
 ```bash
-rm -f tools/spike/lib/libriscv.so tools/spike/lib/libfesvr.so
+make clean-spike
 make spike_lib
 ```
 
@@ -344,7 +344,7 @@ checkout, or `tools/` and the vendor clone were wiped -- both are
 ```bash
 cd sim/core
 make core-v-verif         # re-clones vendor_lib/openhwgroup_core-v-verif
-                           # at the hash pinned in sim/ExternalRepos.mk
+                          # at the hash pinned in sim/ExternalRepos.mk
 make spike_lib
 ```
 
