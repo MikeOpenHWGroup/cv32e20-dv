@@ -17,8 +17,6 @@
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
 
-`timescale 1ns/100ps
-
 module tb_top;
 
     const int CLK_PHASE_HI        = 5;

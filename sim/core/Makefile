@@ -124,7 +124,6 @@ TBSRC       := $(TBSRC_CORE)/tb_top.sv \
                $(TBSRC_CORE)/cv32e20.sv \
                $(TBSRC_CORE)/mm_ram.sv \
                $(TBSRC_CORE)/dp_ram.sv \
-               $(TBSRC_CORE)/tb_riscv/riscv_random_stall.sv \
                $(TBSRC_CORE)/tb_riscv/riscv_random_interrupt_generator.sv \
                $(TBSRC_CORE)/tb_riscv/riscv_rvalid_stall.sv \
                $(TBSRC_CORE)/tb_riscv/riscv_gnt_stall.sv
@@ -139,6 +138,7 @@ TBSRC_VERI  := $(TBSRC_CORE)/tb_top.sv \
                $(TBSRC_CORE)/cv32e20_tb_wrapper.sv \
                $(TBSRC_CORE)/tb_riscv/riscv_rvalid_stall.sv \
                $(TBSRC_CORE)/tb_riscv/riscv_gnt_stall.sv \
+               $(TBSRC_CORE)/tb_riscv/riscv_random_interrupt_generator.sv \
                $(TBSRC_CORE)/mm_ram.sv \
                $(TBSRC_CORE)/dp_ram.sv
 SIM_LIBS    := $(CORE_V_VERIF)/lib/sim_libs
@@ -241,7 +241,8 @@ verilate: CV_CORE_pkg $(TBSRC_VERI) $(TBSRC_PKG)
 	$(VERILATOR) --main --binary --cc --sv --exe --build \
 		$(VERI_TRACE) \
 		--top-module tb_top \
-		$(TBSRC_VERI) \
+		--timescale 1ns/100ps \
+		$(TBSRC_PKG) $(TBSRC_VERI) \
 		-f $(CV_CORE_MANIFEST) \
 		--Mdir $(VERI_OBJ_DIR) \
 		-CFLAGS "-std=gnu++14 $(VERI_CFLAGS)" \

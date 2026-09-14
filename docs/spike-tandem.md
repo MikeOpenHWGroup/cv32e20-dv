@@ -1,5 +1,6 @@
 # Spike Tandem Verification for the CV32E20 Core Testbench
 
+
 The "core" testbench (`tb/core`) can optionally run the Spike instruction-set simulator
 in lock-step ("tandem") with the CV32E20 RTL.  Every instruction retired by
 the core (as reported on its RISC-V Formal Interface, RVFI) causes Spike to
@@ -11,14 +12,18 @@ mismatch report.
 
 ```
               +---------------------- tb_top -----------------------+
+              |                                                     |
               |  +----------- cv32e20_tb_wrapper ----------------+  |
+              |  |                                               |  |
    test.hex --+--+--> mm_ram <--OBI--> cve2_top (CV32E20)        |  |
               |  |                        |                      |  |
               |  |                        | RVFI (retirements)   |  |
               |  |                        v                      |  |
               |  |                  spike_tandem  <--------------+--+-- +elf_file=test.elf
+              |  |                        ^                      |  |
               |  |                        |                      |  |
               |  +------------------------+----------------------+  |
+              |                           |                         |
               +---------------------------+-------------------------+
                                           | DPI-C (spike_create/spike_step)
                                           v
@@ -45,6 +50,25 @@ Components:
 The same test-program image is given to both models: the testbench loads the
 Verilog-hex file into `mm_ram` (`+test_program=`), and Spike loads the ELF the
 hex was generated from (`+elf_file=`, added automatically by the Makefile).
+
+**Why `rs1`/`rs2` are populated but not compared**: `st_rvfi` carries
+`rs1_addr`/`rs1_rdata`/`rs2_addr`/`rs2_rdata` (`spike_tandem.sv:277-280` on
+the RTL side, `Proc.cc:219-222` on Spike's side), because the struct layout
+has to match Spike's own `Types.h` word-for-word regardless of what the
+checker uses - but `compare_retirement()` never checks them. No comment or
+prior design note explains this, so treat the following as inferred
+reasoning, not a documented decision: `rd_wdata` is checked on every
+retirement, and since both models start from identical architectural state,
+a register's content is entirely determined by the writes made to it -  so
+for most instructions a corrupted source operand would already show up
+indirectly as a wrong computed result on that same instruction, making an
+explicit rs1/rs2 check mostly redundant. The real gap this leaves is
+instructions whose operands don't feed a GPR write at all - **stores**
+(`rs2` = the data being stored) and, more weakly, **branches** (the PC
+comparison already catches a wrong branch decision, just not via rs1/rs2
+directly). Since memory-write address/data isn't compared either, a
+corrupted store-data operand specifically could slip through undetected
+today - a narrow, currently-open corner of phase-1 scope, not a known bug.
 
 ## Usage
 
@@ -299,6 +323,100 @@ mcause (`rvfi_stage_intr[0]`, "Interrupt injection" above):
 
 In order to support the `coremark` test program, it is necessary to forward
 the "TICKS" platform CSR implemented in the `mm_ram` to the `mcycle` CSR.
+
+## Store verification (datapath check + actual-memory-landed check)
+
+`compare_retirement()` also checks stores now, closing a real gap: nothing
+previously verified that a store computed the right address/data, or that
+the write actually reached memory -- a bug there has no register-writeback
+footprint to catch it (a load's returned value is already covered
+indirectly via the existing `rd_wdata` check, so loads are out of scope
+here).
+
+Two independent checks, not one, because a single RVFI-based comparison
+structurally can't catch everything:
+
+- **Datapath check**: `Proc.cc` independently computes the store
+  address/mask/data from Spike's own decode and register file (SB/SH/SW via
+  the S-type immediate, C.SW via CS-format, C.SWSP via CSS-format with an
+  implicit `x2` base -- architecturally hardwired by the ISA, not a
+  calling-convention assumption), deliberately mirroring CVE2's own RVFI
+  convention: a size-only mask and raw, unshifted `rs2` value, not the real
+  bus's offset-rotated byte-enables/data. This is compared against the
+  RTL's self-reported `rvfi_mem_addr`/`rvfi_mem_wmask`/`rvfi_mem_wdata`.
+- **Landed check**: a whitebox probe in `cv32e20_tb_wrapper.sv` (mirroring
+  `mm_ram.sv`'s own signature-dump technique) reads the testbench RAM's
+  actual post-write byte contents directly and compares them against
+  Spike's same independently-computed expected value -- gated to the real
+  RAM address range, since peripherals aren't backed by that array.
+
+The landed check exists because CVE2's RVFI mem_* signals are captured
+*pre-LSU* (the ALU adder result and raw `rs2`), not tapped from the actual
+OBI bus wires, which are separately byte-rotated by offset inside the
+load-store unit. A bug in that rotation/byte-enable logic is invisible to
+the datapath check -- both RVFI's self-report and Spike's independent
+recompute mirror the same pre-LSU convention and would agree with each
+other regardless -- but corrupts what's actually written, which only a
+real memory readback can catch.
+
+One real bug was found and fixed via this work: `Proc.cc`'s internal
+multi-iteration trap-handling loop only clears its RVFI-mirroring struct
+once before the loop, not per iteration, so a non-store instruction retired
+on a later iteration (e.g. a jump following a trap handler's epilogue
+store) was inheriting a stale nonzero store address/mask/data from an
+earlier iteration's real store. Fixed by explicitly zeroing these fields on
+the non-store path instead of relying on the outer clear.
+
+Verified via the full core suite (16/16) and the ACT4 certify sweep
+(95/95), including dedicated S-type and C.SW/C.SWSP compliance coverage.
+
+## Random OBI stalls and interrupt injection now live under Verilator
+
+The functionality of `mm_ram.sv` and `tb_riscv/riscv_random_interrupt_generator.sv`
+have been verified via the full core suite (16/16) and the ACT4 certify sweep
+(95/95) under Verilator 5.052.
+- UVM logging calls (currently) are commented out in place (not deleted) with an
+  equivalent `$display`/`$error`/`$fatal` statement added alongside each
+  one, following the style `mm_ram.sv`'s own signature-dump code already
+  established for this exact port.
+- The random stall generator (`configure_stalls`) is unguarded --
+  `randcase` compiles and runs correctly under Verilator 5.052.
+  Random OBI data/instruction-phase
+  stalls are now genuinely exercised by the existing full-suite regression
+  by default, which incidentally closes out this project's own outstanding
+  item: stress-testing the store-verification landed check's same-cycle
+  RAM-write-completion timing assumption under real wait states -- no
+  separate directed test needed.
+- `riscv_random_interrupt_generator` (a class-based `.randomize() with
+  {...}` constrained-random interrupt generator, instantiated in
+  `mm_ram.sv`) is unguarded too. Getting it to actually run exposed two
+  pre-existing, unrelated Makefile bugs, not a Verilator compatibility
+  problem: the file (and the `perturbation_defines` package it imports)
+  were listed as `verilate`'s Make *prerequisites* but never actually
+  appeared in the real `verilator` command line, so neither was ever
+  compiled at all. Fixed by adding both to the file list the build
+  actually uses. Once actually compiled, the class-based `randomize()`
+  logic itself worked on the first attempt.
+- Verified the `randomize()` calls aren't just compiling but producing
+  correct, in-bounds, non-degenerate values: a standalone unit-level
+  harness instantiating the module directly, driving a narrow `[min,max]`
+  range for both the interrupt id and the wait-cycle count, captured 40
+  real interrupt events -- all ids in-range and covering the full range,
+  all inter-event gaps varying and covering the full wait-cycle range. Not
+  part of the checked-in testbench; a one-off verification exercise.
+- A leftover per-file `` `timescale 1ns/100ps `` directive (in `tb_top.sv`,
+  `spike_tandem.sv`, `spike_tandem_pkg.sv`) triggered a fatal
+  `TIMESCALEMOD` warning once a fourth compiled file
+  (`perturbation_defines.sv`) lacked one -- removed all three per-file
+  directives in favor of a single, uniform `--timescale 1ns/100ps` on the
+  Verilator command line, consistent with this project's own "no
+  timescale directives in source files" convention.
+- Three legacy, entirely unreferenced RI5CY/Zeroriscy-era files
+  (`tb_riscv_core.sv`, `riscv_simchecker.sv`, `riscv_random_stall.sv`) were
+  moved to `tb_riscv/deprecated/` -- none were ever wired into any
+  Makefile/`.f`/`.flist` in this project. `riscv_perturbation.sv` is
+  equally dead (only `tb_riscv_core.sv` referenced it) but was left in
+  place.
 
 ## Relationship to the RVVI-API
 
