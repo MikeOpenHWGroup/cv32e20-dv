@@ -15,7 +15,7 @@
 //     simulator's library path (built by 'make spike_lib', linked in by
 //     SPIKE_TANDEM=1 in sim/core/Makefile).
 //
-// Known phase-1 limitations (documented in docs/spike-tandem.md):
+// Known phase-1 limitations (documented in reference/spike-tandem.md):
 //   - Loads from testbench virtual peripherals (e.g. the mm_ram timer) return
 //     testbench-specific values that Spike cannot predict.
 //   - Reads of free-running counter CSRs (cycle/mcycle/mip) are handled by
@@ -66,7 +66,7 @@ module spike_tandem
 
     // Whitebox probe of cve2_core.sv's internal rvfi_stage_dbg -- a one-shot
     // debug-entry cause tag used to inject debug-mode entry into Spike. See
-    // tandem_step() and docs/spike-tandem.md.
+    // tandem_step() and reference/spike-tandem.md.
     input logic [ 3:0] rvfi_dbg_cause,
 
     // Whitebox probe of the RTL's own debug_mode, for an independent

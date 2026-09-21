@@ -775,7 +775,7 @@ dpi_dasm: $(DPI_DASM_SPIKE_PKG)
 # (openhw::Simulation/Proc, riscv_dpi.cc) needed for lock-step verification.
 
 export SPIKE_PATH  = $(CV32E20_DV)/vendor_lib/openhwgroup_core-v-verif/vendor/riscv/riscv-isa-sim
-export SPIKE_INSTALL_DIR = $(CV32E20_DV)/tools/spike/
+export SPIKE_INSTALL_DIR = $(CV32E20_DV)/reference/spike/
 SPIKE_LIBS_DIR = $(SPIKE_INSTALL_DIR)/lib/
 SPIKE_FESVR_LIB = $(SPIKE_LIBS_DIR)/libfesvr
 SPIKE_RISCV_LIB = $(SPIKE_LIBS_DIR)/libriscv

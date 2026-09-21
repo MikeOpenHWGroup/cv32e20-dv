@@ -94,7 +94,7 @@ module cv32e20_tb_wrapper
     logic [63:0] rvfi_ext_mcycle;
 
     // Whitebox probes required for RVFI (aka cross-module references or XMRs).
-    // Refer to docs/spike-tandem.md for details.
+    // Refer to reference/spike-tandem.md for details.
 
     // 'rvfi_intr' only exposed LSB and Spike tandem needs the full value.
     wire [8:0] rvfi_intr_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_intr[0];

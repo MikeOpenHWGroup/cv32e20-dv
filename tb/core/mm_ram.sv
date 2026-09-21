@@ -261,34 +261,21 @@ module mm_ram
                 rnd_stall_regs[RND_STALL_DATA_MAX]    = 8;
             end
             else begin
-                randcase
-                    2: begin
-                        // No delays
-                    end
-                    1: begin
-                        // Create RAM stall delays
-                        rnd_stall_regs[RND_STALL_INSTR_EN]    = 1;
-                        rnd_stall_regs[RND_STALL_INSTR_MODE]  = $urandom_range(2,1);
-                        rnd_stall_regs[RND_STALL_INSTR_GNT]   = $urandom_range(3,0);
-                        rnd_stall_regs[RND_STALL_INSTR_VALID] = $urandom_range(3,0);
-                        rnd_stall_regs[RND_STALL_INSTR_MAX]   = $urandom_range(3,0);
-                    end
-                endcase
-
-                randcase
-                    2: begin
-                        // No delays
-                    end
-                    1: begin
-                        // Create RAM stall delays
-                        rnd_stall_regs[RND_STALL_DATA_EN]     = 1;
-                        rnd_stall_regs[RND_STALL_DATA_MODE]   = $urandom_range(2,1);
-                        rnd_stall_regs[RND_STALL_DATA_GNT]    = $urandom_range(2,0);
-                        rnd_stall_regs[RND_STALL_DATA_VALID]  = $urandom_range(2,0);
-                        rnd_stall_regs[RND_STALL_DATA_MAX]    = $urandom_range(3,0);
-                    end
-                endcase
+                $display("%m @ %0t: randomizing data and instruction stalls", $time);
+                rnd_stall_regs[RND_STALL_INSTR_EN]    = 1;
+                rnd_stall_regs[RND_STALL_INSTR_MODE]  = $urandom_range(2,1);
+                rnd_stall_regs[RND_STALL_INSTR_GNT]   = $urandom_range(3,0);
+                rnd_stall_regs[RND_STALL_INSTR_VALID] = $urandom_range(3,0);
+                rnd_stall_regs[RND_STALL_INSTR_MAX]   = $urandom_range(3,0);
+                rnd_stall_regs[RND_STALL_DATA_EN]     = 1;
+                rnd_stall_regs[RND_STALL_DATA_MODE]   = $urandom_range(2,1);
+                rnd_stall_regs[RND_STALL_DATA_GNT]    = $urandom_range(2,0);
+                rnd_stall_regs[RND_STALL_DATA_VALID]  = $urandom_range(2,0);
+                rnd_stall_regs[RND_STALL_DATA_MAX]    = $urandom_range(3,0);
             end
+        end
+        else begin
+            $display("%m @ %0t: plus_arg rand_stall_obi_disable set: zero data stall, zero instruction stall configuration", $time);
         end
 
         // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall enable: %0d", rnd_stall_regs[RND_STALL_INSTR_EN]), UVM_LOW)

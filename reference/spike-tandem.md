@@ -1,3 +1,7 @@
+<!--
+Copyright 2026, Eclipse Foundation
+SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+-->
 # Spike Tandem Verification for the CV32E20 Core Testbench
 
 
@@ -30,45 +34,33 @@ mismatch report.
                             libriscv.so (tandem-patched Spike)
 ```
 
-Components:
+Spike-tandem module is comprised of the following components:
 
 - **`tb/core/spike_tandem_pkg.sv`** - DPI-C imports and the `st_rvfi`
   exchange type.  The struct layout must match `riscv/Types.h` of the
   tandem-patched Spike word-for-word (34 scalar 64-bit fields followed by six
   4096-entry CSR arrays).
-- **`tb/core/spike_tandem.sv`** - the checker.  Configures Spike at time 0
+- **`tb/core/spike_tandem.sv`** - the checker (also known as the scoreboard).
+  Configures Spike at time 0
   (ISA, privilege modes, memory map, CV32E20-specific CSR reset values /
   ID registers), then on every RVFI retirement calls `spike_step_svLogic()`
   and compares PC, instruction word, trap flag, privilege mode, and rd
   writeback (address and data).
-- **`vendor_lib/openhwgroup_core-v-verif/vendor/riscv/riscv-isa-sim`** - the
-  tandem-patched Spike (`openhw::Simulation`/`openhw::Processor`,
-  `riscv_dpi.cc`), vendored inside the core-v-verif clone.  Built into
-  `tools/spike/lib/libriscv.so` (and sister libraries) by the `spike_lib`
-  target in `mk/Common.mk`.
+
+The implementation of **`libriscv.so`**, the "tandem-patched Spike" in the figure above,
+is documented in spike-implementation.md.
+
+## Operation
 
 The same test-program image is given to both models: the testbench loads the
 Verilog-hex file into `mm_ram` (`+test_program=`), and Spike loads the ELF the
 hex was generated from (`+elf_file=`, added automatically by the Makefile).
 
-**Why `rs1`/`rs2` are populated but not compared**: `st_rvfi` carries
-`rs1_addr`/`rs1_rdata`/`rs2_addr`/`rs2_rdata` (`spike_tandem.sv:277-280` on
-the RTL side, `Proc.cc:219-222` on Spike's side), because the struct layout
-has to match Spike's own `Types.h` word-for-word regardless of what the
-checker uses - but `compare_retirement()` never checks them. No comment or
-prior design note explains this, so treat the following as inferred
-reasoning, not a documented decision: `rd_wdata` is checked on every
-retirement, and since both models start from identical architectural state,
-a register's content is entirely determined by the writes made to it -  so
-for most instructions a corrupted source operand would already show up
-indirectly as a wrong computed result on that same instruction, making an
-explicit rs1/rs2 check mostly redundant. The real gap this leaves is
-instructions whose operands don't feed a GPR write at all - **stores**
-(`rs2` = the data being stored) and, more weakly, **branches** (the PC
-comparison already catches a wrong branch decision, just not via rs1/rs2
-directly). Since memory-write address/data isn't compared either, a
-corrupted store-data operand specifically could slip through undetected
-today - a narrow, currently-open corner of phase-1 scope, not a known bug.
+<!--
+TODO: add discussion about:
+- DPI-C interface
+- step/compare loop
+-->
 
 ## Usage
 
@@ -186,6 +178,24 @@ Spike instead of being forwarded from the RTL.
 <!--
 TODO: deside if these details are worth keeping in this document...
 
+- **Why `rs1`/`rs2` are populated but not compared**: `st_rvfi` carries
+  `rs1_addr`/`rs1_rdata`/`rs2_addr`/`rs2_rdata` (`spike_tandem.sv:277-280` on
+  the RTL side, `Proc.cc:219-222` on Spike's side), because the struct layout
+  has to match Spike's own `Types.h` word-for-word regardless of what the
+  checker uses - but `compare_retirement()` never checks them. No comment or
+  prior design note explains this, so treat the following as inferred
+  reasoning, not a documented decision: `rd_wdata` is checked on every
+  retirement, and since both models start from identical architectural state,
+  a register's content is entirely determined by the writes made to it -  so
+  for most instructions a corrupted source operand would already show up
+  indirectly as a wrong computed result on that same instruction, making an
+  explicit rs1/rs2 check mostly redundant. The real gap this leaves is
+  instructions whose operands don't feed a GPR write at all - **stores**
+  (`rs2` = the data being stored) and, more weakly, **branches** (the PC
+  comparison already catches a wrong branch decision, just not via rs1/rs2
+  directly). Since memory-write address/data isn't compared either, a
+  corrupted store-data operand specifically could slip through undetected
+  today - a narrow, currently-open corner of phase-1 scope, not a known bug.
 - **Backing storage**: each of the 6 counters gets a real `basic_csr_t`
   register (installed into `csrmap` in `Processor`'s constructor,
   wrapped in `rv32_low_csr_t`/`rv32_high_csr_t` for the RV32 32-bit-half
@@ -431,13 +441,13 @@ written so that only `spike_tandem_init()` and `tandem_step()` need to change.
 
 ```bash
 cd sim/core
-make spike_lib            # builds into <repo>/tools/spike/{lib,include}
+make spike_lib            # builds into <repo>/reference/spike/{lib,include}
 ```
 
 The Spike build needs `svdpi.h`; the Makefile locates it from the Verilator
 in `$PATH` (`verilator --getenv VERILATOR_ROOT`).
 
-`spike_lib`'s targets are plain files (`tools/spike/lib/{libriscv,libfesvr}.so`)
+`spike_lib`'s targets are plain files (`reference/spike/lib/{libriscv,libfesvr}.so`)
 with no dependency on Spike's own sources, so it only rebuilds when those
 `.so`s don't exist yet -- editing `Proc.cc` and re-running `make spike_lib`
 does nothing.  Force a rebuild either by removing the `.so`s first:
