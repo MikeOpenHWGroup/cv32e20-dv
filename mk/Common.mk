@@ -800,7 +800,7 @@ $(SPIKE_FESVR_LIB).so $(SPIKE_RISCV_LIB).so:
 	[ ! -f $(SPIKE_PATH)/build/config.log ] && cd $(SPIKE_PATH)/build && ../configure --prefix=$(SPIKE_INSTALL_DIR) || true
 	make -C $(SPIKE_PATH)/build/ -j $(NUM_JOBS) yaml-cpp-static;
 	make -C $(SPIKE_PATH)/build/ -j $(NUM_JOBS) yaml-cpp;
-	make -C $(SPIKE_PATH)/build/ -j $(NUM_JOBS) EDA_INCLUDES="-I$(SPIKE_VLTSTD_DIR)" install;
+	make -C $(SPIKE_PATH)/build/ -j $(NUM_JOBS) EDA_INCLUDES="-I$(SPIKE_VLTSTD_DIR)" OPENHW_CORE=$(CV_CORE_LC) install;
 
 spike_lib: $(SPIKE_FESVR_LIB).so $(SPIKE_RISCV_LIB).so
 

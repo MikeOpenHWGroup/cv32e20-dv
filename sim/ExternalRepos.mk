@@ -23,7 +23,7 @@ CV_CORE_HASH   ?= 094e974
 #CV_VERIF_HASH   ?= 6b5a46353bf69baf4f917b9d59c5f0c68a2f529b
 CV_VERIF_REPO   ?= https://github.com/MikeOpenHWGroup/core-v-verif
 CV_VERIF_BRANCH ?= cv32e20-dv/dev
-CV_VERIF_HASH   ?= 81aa902037c0d8e1024355d6a2f4e855bdd11a8a
+CV_VERIF_HASH   ?= b6c814799d14b8d235e80ca9d7088e3f82f0c550
 
 RISCVDV_REPO    ?= https://github.com/google/riscv-dv
 RISCVDV_BRANCH  ?= master
