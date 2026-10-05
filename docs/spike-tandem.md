@@ -351,3 +351,13 @@ make spike_lib
 `bin/run_tests.py --spike-tandem` runs `make spike_lib` itself before any
 test/certify run, so the common case (Spike already built) is a fast no-op;
 a first-time or post-wipe build can take several minutes.
+
+### Spike Compile-time Consideratons
+
+When `SPIKE_TANDEM` is defined to be anything other than 0 the sources will be compiled into a shared object ("dot-so") file,
+unless it already exists. There are some compile-time considerations to be aware of:
+- The package must precede its importers in compile order.
+- `libriscv.so` does not record dependencies on its sister libraries, so name them all.
+- the `st_rvfi` struct is large, so `-Wno-WIDTHCONCAT` suppress Verilator's replication limit.
+- `--no-as-needed` force-loads DT_NEEDED entries
+- `--allow-shlib-undefined` suppresses errors due to deliberately excluded libraries see the EDA_INCLUDES in mk/Common.mk.
