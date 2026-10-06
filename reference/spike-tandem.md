@@ -377,56 +377,16 @@ store) was inheriting a stale nonzero store address/mask/data from an
 earlier iteration's real store. Fixed by explicitly zeroing these fields on
 the non-store path instead of relying on the outer clear.
 
-Verified via the full core suite (16/16) and the ACT4 certify sweep
-(95/95), including dedicated S-type and C.SW/C.SWSP compliance coverage.
+## Random OBI stalls and random Interrupt injection
 
-## Random OBI stalls and interrupt injection now live under Verilator
-
-The functionality of `mm_ram.sv` and `tb_riscv/riscv_random_interrupt_generator.sv`
-have been verified via the full core suite (16/16) and the ACT4 certify sweep
-(95/95) under Verilator 5.052.
-- UVM logging calls (currently) are commented out in place (not deleted) with an
-  equivalent `$display`/`$error`/`$fatal` statement added alongside each
-  one, following the style `mm_ram.sv`'s own signature-dump code already
-  established for this exact port.
-- The random stall generator (`configure_stalls`) is unguarded --
-  `randcase` compiles and runs correctly under Verilator 5.052.
-  Random OBI data/instruction-phase
-  stalls are now genuinely exercised by the existing full-suite regression
-  by default, which incidentally closes out this project's own outstanding
-  item: stress-testing the store-verification landed check's same-cycle
-  RAM-write-completion timing assumption under real wait states -- no
-  separate directed test needed.
-- `riscv_random_interrupt_generator` (a class-based `.randomize() with
+- Random OBI data/instruction-phase stalls can be enabled by default for any test.
+  This implies that each run of any test will be distinct, even for a static
+  test-program.
+- `riscv_random_interrupt_generator` (a (non-UVM) class-based `.randomize() with
   {...}` constrained-random interrupt generator, instantiated in
-  `mm_ram.sv`) is unguarded too. Getting it to actually run exposed two
-  pre-existing, unrelated Makefile bugs, not a Verilator compatibility
-  problem: the file (and the `perturbation_defines` package it imports)
-  were listed as `verilate`'s Make *prerequisites* but never actually
-  appeared in the real `verilator` command line, so neither was ever
-  compiled at all. Fixed by adding both to the file list the build
-  actually uses. Once actually compiled, the class-based `randomize()`
-  logic itself worked on the first attempt.
-- Verified the `randomize()` calls aren't just compiling but producing
-  correct, in-bounds, non-degenerate values: a standalone unit-level
-  harness instantiating the module directly, driving a narrow `[min,max]`
-  range for both the interrupt id and the wait-cycle count, captured 40
-  real interrupt events -- all ids in-range and covering the full range,
-  all inter-event gaps varying and covering the full wait-cycle range. Not
-  part of the checked-in testbench; a one-off verification exercise.
-- A leftover per-file `` `timescale 1ns/100ps `` directive (in `tb_top.sv`,
-  `spike_tandem.sv`, `spike_tandem_pkg.sv`) triggered a fatal
-  `TIMESCALEMOD` warning once a fourth compiled file
-  (`perturbation_defines.sv`) lacked one -- removed all three per-file
-  directives in favor of a single, uniform `--timescale 1ns/100ps` on the
-  Verilator command line, consistent with this project's own "no
-  timescale directives in source files" convention.
-- Three legacy, entirely unreferenced RI5CY/Zeroriscy-era files
-  (`tb_riscv_core.sv`, `riscv_simchecker.sv`, `riscv_random_stall.sv`) were
-  moved to `tb_riscv/deprecated/` -- none were ever wired into any
-  Makefile/`.f`/`.flist` in this project. `riscv_perturbation.sv` is
-  equally dead (only `tb_riscv_core.sv` referenced it) but was left in
-  place.
+  `mm_ram.sv`) is unguarded too.
+- Legacy, entirely unreferenced RI5CY/Zeroriscy-era files
+  have been moved to `tb_riscv/deprecated/`.
 
 ## Relationship to the RVVI-API
 

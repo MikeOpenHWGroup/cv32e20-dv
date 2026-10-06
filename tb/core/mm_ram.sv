@@ -377,9 +377,7 @@ module mm_ram
                     if ($value$plusargs("signature=%s", sig_file)) begin
                         sig_fd = $fopen(sig_file, "w");
                         if (sig_fd == 0) begin
-                            // errno = $ferror(sig_fd, error_str);
-                            // `uvm_error(MM_RAM_TAG, $sformatf("Cannot open signature file %s for writing (error_str: %s).", sig_file, error_str))
-                            $error("can't open file");
+                            $error("Cannot open signature file %s for writing.", sig_file);
                             use_sig_file = 1'b0;
                         end else begin
                             use_sig_file = 1'b1;
@@ -524,12 +522,6 @@ module mm_ram
             data_rdata_mux = core_data_rdata;
         end else if(select_rdata_q == RND_STALL) begin
             data_rdata_mux = rnd_stall_rdata;
-            // `uvm_fatal(MM_RAM_TAG, $sformatf("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i));
-            // Obsolete: this fired unconditionally on any read from the
-            // RND_STALL region, which was only ever reached because the
-            // feature was disabled under Verilator (nothing was expected
-            // to legitimately read it back). Now that the generator is
-            // enabled here too, reading it back is normal -- no fatal.
         end else if (select_rdata_q == RND_NUM) begin
             data_rdata_mux = rnd_num;
         end else if (select_rdata_q == CLINT) begin

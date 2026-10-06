@@ -15,7 +15,7 @@
 //     simulator's library path (built by 'make spike_lib', linked in by
 //     SPIKE_TANDEM=1 in sim/core/Makefile).
 //
-// Known phase-1 limitations (documented in reference/spike-tandem.md):
+// Known limitations:
 //   - Loads from testbench virtual peripherals (e.g. the mm_ram timer) return
 //     testbench-specific values that Spike cannot predict.
 //   - Reads of free-running counter CSRs (cycle/mcycle/mip) are handled by

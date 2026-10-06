@@ -88,9 +88,7 @@ SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(SEED)
 SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
 SIM_BSP_RESULTS          = $(SIM_TEST_PROGRAM_RESULTS)/bsp
 
-# One compiled Verilator executable, shared by every TEST -- the compiled
-# design doesn't vary per TEST (TEST only selects a runtime +test_program
-# plusarg), so a per-TEST copy under SIM_TEST_RESULTS was pure duplication.
+# One compiled Verilator executable, shared by every TEST
 VERI_EXECUTABLE          = $(SIM_RESULTS)/verilator_executable
 
 # Compile compile flags for all simulators
@@ -165,8 +163,7 @@ export DESIGN_RTL_DIR  = $(CV_CORE_PKG)/rtl
 # Spike tandem (lock-step) verification support.
 #   make test TEST=<name> SPIKE_TANDEM=1
 # Compiles the RVFI-driven spike_tandem checker into the testbench and links
-# the tandem-patched Spike libraries (built into $(SPIKE_LIBS_DIR) by the
-# 'spike_lib' target of mk/Common.mk).  See reference/spike-tandem.md.
+# the tandem-patched Spike model.
 SPIKE_TANDEM ?= 0
 ifneq ($(SPIKE_TANDEM), 0)
   SV_CMP_FLAGS += +define+RVFI +define+SPIKE_TANDEM
@@ -174,9 +171,7 @@ ifneq ($(SPIKE_TANDEM), 0)
   TBSRC_VERI   := $(TBSRC_CORE)/spike_tandem_pkg.sv \
                   $(TBSRC_VERI) \
                   $(TBSRC_CORE)/spike_tandem.sv
-  # libriscv.so does not record dependencies on its sister libraries, so name
-  # them all.  -Wno-WIDTHCONCAT: the st_rvfi struct is a ~1.5 Mbit packed
-  # vector; aggregate assignments to it trip Verilator's replication limit.
+  # the st_rvfi struct is a ~1.5 Mbit packed vector; -Wno-WIDTHCONCAT helps with that.
   VERI_COMPILE_FLAGS += -Wno-WIDTHCONCAT
   # --no-as-needed: the executable itself only calls into libriscv, but
   # libriscv.so does not record DT_NEEDED entries for its sister libraries,
@@ -196,15 +191,6 @@ ifneq ($(SPIKE_TANDEM), 0)
   VERI_COMPILE_FLAGS += -LDFLAGS "-L$(SPIKE_LIBS_DIR) -Wl,--no-as-needed -Wl,--allow-shlib-undefined -lopenhw -lriscv -lfesvr -ldisasm -lsoftfloat -lyaml-cpp -Wl,-rpath,$(SPIKE_LIBS_DIR)"
   VERI_RUN_FLAGS     += +elf_file=$(TEST_PROGRAM_RELPATH)/$(TEST)/$(TEST).elf
 # The Spike shared libraries must exist before the Verilator link step.
-# Depends on spike_lib's own real file targets directly, not the bare
-# `spike_lib` alias itself (mk/Common.mk:805) -- a bare/phony prerequisite
-# with no corresponding file always looks "changed" to Make, which would
-# force $(VERI_EXECUTABLE) to rebuild on every invocation regardless of
-# whether Spike actually changed (the same class of bug fixed for
-# CV_CORE_pkg/clone_rtl above via $(CV_CORE_MANIFEST)). Using the real
-# .so files directly still correctly forces a relink whenever Spike is
-# rebuilt (e.g. after editing Proc.cc), since their own mtimes update
-# for real when that happens.
 $(VERI_EXECUTABLE): $(SPIKE_FESVR_LIB).so $(SPIKE_RISCV_LIB).so
 endif
 
@@ -225,15 +211,6 @@ check:
 # Shorthand rules for convience
 CV_CORE_pkg: clone_rtl
 
-# Real-file pass-through: $(CV_CORE_MANIFEST) depends on the bare/phony
-# clone_rtl (so a missing clone still gets cloned), but has no recipe of
-# its own, so its on-disk mtime is only ever touched by clone_rtl actually
-# creating it -- never by Make merely "processing" this rule. That's what
-# lets $(VERI_EXECUTABLE) depend on it (below) without inheriting
-# clone_rtl's bare-target "always out of date" cascade: a bare/phony
-# prerequisite with no corresponding file forces every direct dependent to
-# always rebuild, and CV_CORE_pkg itself is exactly such a target, so
-# $(VERI_EXECUTABLE) must not list it directly.
 $(CV_CORE_MANIFEST): clone_rtl
 
 tbsrc_pkg: $(TBSRC_PKG)
@@ -273,11 +250,7 @@ endif
 # Build-flags fingerprint: SPIKE_TANDEM/WAVE/WAVES change what gets
 # compiled (defines, source list, linker flags, --trace-fst), not just
 # which source files are newer, so a plain file-timestamp dependency can't
-# detect a flag-only change between two `make test` invocations. This
-# sentinel is rewritten (bumping its mtime) only when the effective flag
-# string actually differs from last time; $(VERI_EXECUTABLE) depends on it
-# below, so a flag change correctly busts the cache while an unchanged
-# flag set does not force a needless rebuild.
+# detect a flag-only change between two `make test` invocations.
 VERI_BUILD_FLAGS_FILE = $(VERI_OBJ_DIR)/.build_flags
 VERI_BUILD_FLAGS      = SPIKE_TANDEM=$(SPIKE_TANDEM) WAVE=$(WAVE) WAVES=$(WAVES)
 
@@ -288,11 +261,9 @@ $(VERI_BUILD_FLAGS_FILE): FORCE
 	@mkdir -p $(VERI_OBJ_DIR)
 	@echo '$(VERI_BUILD_FLAGS)' | cmp -s - $@ || echo '$(VERI_BUILD_FLAGS)' > $@
 
-# $(VERI_EXECUTABLE) is a real, timestamp-tracked target (unlike the old
-# bare-word `verilate` target it replaces) so a `make test`/`make certify`
+# $(VERI_EXECUTABLE) is a real, timestamp-tracked target so a `make test`/`make certify`
 # run with nothing changed -- same flags, same sources -- skips recompiling
-# entirely and reuses the existing shared executable. `verilate` survives
-# as a thin phony alias below so nothing else needs to change.
+# entirely and reuses the existing shared executable.
 $(VERI_EXECUTABLE): $(VERI_BUILD_FLAGS_FILE) $(CV_CORE_MANIFEST) \
                      $(TBSRC_VERI) $(TBSRC_PKG)
 	@echo "$(BANNER)"
@@ -387,7 +358,6 @@ clean-all-banner:
 	@echo "$(BANNER)"
 
 clean_all: clean-all-banner clean-all-targets
-#endend
 
 ###############################################################################
 # certification test-program directories (prebuilt elf file copy-pasted from act4)
@@ -416,8 +386,7 @@ gen: $(ACT4_PKG)
 # VERI_RUN_FLAGS's compile-time +elf_file (baked from TEST=certification,
 # not a real file) is wrong for every iteration. The loop below passes its
 # own "+elf_file=$$ELF" BEFORE $(VERI_RUN_FLAGS) -- Verilator's
-# $value$plusargs matches the FIRST +elf_file= on the command line
-# (verilated.cpp's argPlusMatch), so the ordering here is load-bearing.
+# $value$plusargs matches the FIRST +elf_file= on the command line.
 certify: TEST = certification
 certify: verilate
 	@echo "$(BANNER)"
