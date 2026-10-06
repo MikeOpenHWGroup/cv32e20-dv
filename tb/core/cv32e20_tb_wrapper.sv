@@ -99,7 +99,6 @@ module cv32e20_tb_wrapper
     // 'rvfi_intr' only exposed LSB and Spike tandem needs the full value.
     wire [8:0] rvfi_intr_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_intr[0];
     wire [3:0] rvfi_dbg_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg[0];
-    //wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.debug_mode;
     wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg_mode[0];
 
     // Whitebox probe: actual bytes at rvfi_mem_addr in the testbench RAM's

@@ -179,9 +179,7 @@ endif
 # SVLIB repo var end
 
 ###############################################################################
-# Generate command to clone CORE-V-VERIF (OpenHW's UVM Verification Library)
-# CV_VERIF_PKG was previously undefined, so the clone landed in the invoking
-# directory and the pinned-hash checkout silently failed.
+# Location to clone CORE-V-VERIF (OpenHW's UVM Verification Library)
 export CV_VERIF_PKG ?= $(CV32E20_DV)/vendor_lib/openhwgroup_core-v-verif
 
 ifeq ($(CV_VERIF_BRANCH), master)
