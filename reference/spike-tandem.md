@@ -299,6 +299,32 @@ Of those, the three below are fully supported by Spike:
   (`TM`) CSR modeling is complete enough to make this independently verifiable
   the way `mip` was is unexplored - not attempted here.
 
+### Holding the external halt request until the core halts
+
+A test program asks for a halt request by writing to `mm_ram`'s virtual
+"debugger" register. The `tb_debugger` block in `mm_ram.sv` then drives
+`debug_req_o`, either as a level or as a pulse of a given width.
+
+The RISC-V Debug Specification (1.0.0-STABLE, §3.5 "Run Control") requires
+the Debug Module to keep a halt request asserted until the hart has
+actually halted. A fixed-width pulse doesn't meet that requirement. While
+the core is stalled on the OBI bus, a short pulse can go high and low
+before the core ever samples it, and the request is lost. `debug_test`
+asks for 5-cycle pulses, and with random OBI stalls active some seeds
+dropped one of them. The test then waited forever for a debug entry that
+never came.
+
+The testbench now holds the request like a real Debug Module would:
+
+- `cv32e20_tb_wrapper.sv` connects `cve2_top`'s `debug_halted_o` (the
+  core's `debug_mode`) to a new `mm_ram` input, `debug_halted_i`.
+- When an asserting pulse's count reaches its last cycle, `tb_debugger`
+  keeps `debug_req_o` high until `debug_halted_i` is set, then releases
+  it. The programmed width is now the minimum time the request is held,
+  not the exact time.
+- De-asserting pulses (debugger register bit 31 clear) and level mode
+  behave as before.
+
 
 Asserting `debug_req` to the RTL model is not visible to Spike, so we use
 the same whitebox-probe technique already established for
@@ -379,9 +405,22 @@ the non-store path instead of relying on the outer clear.
 
 ## Random OBI stalls and random Interrupt injection
 
-- Random OBI data/instruction-phase stalls can be enabled by default for any test.
-  This implies that each run of any test will be distinct, even for a static
-  test-program.
+- Random OBI data/instruction-phase stalls are enabled by default for every
+  test, under Verilator as well as the commercial simulators. `mm_ram.sv`'s
+  `configure_stalls` block randomizes the `rnd_stall_regs` knobs at reset
+  (enable, mode, grant/rvalid stall probability and maximum delay for each
+  of the instruction and data ports). The plusarg `+rand_stall_obi_disable`
+  turns all stalls off, and `+max_data_zero_instr_stall` selects maximum
+  data-port stalls with no instruction-port stalls.
+  The knobs are drawn from the simulation seed, so a run is reproducible
+  from its seed but different seeds give different bus timing, even for a
+  static test-program.
+- Earlier versions of `riscv_gnt_stall.sv` (`set_delay_value()`) and
+  `riscv_rvalid_stall.sv` (`get_random_delay()`) had `ifdef VERILATOR`
+  branches that forced every delay to zero, so under Verilator the knobs
+  were printed but no stalls were ever inserted. Those branches have been
+  removed. The only remaining Verilator guard is the `#(100ps)` output
+  delay in `riscv_gnt_stall.sv`, which Verilator doesn't support.
 - `riscv_random_interrupt_generator` (a (non-UVM) class-based `.randomize() with
   {...}` constrained-random interrupt generator, instantiated in
   `mm_ram.sv`) is unguarded too.

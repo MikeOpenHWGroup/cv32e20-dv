@@ -1,5 +1,6 @@
 // MM_RAM: Memory Mapped virtual peripheral and RAM model.
 //
+// Copyright 2026 Eclipse Foundation
 // Copyright 2025 OpenHW Foundation
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-0.51
 //
@@ -60,6 +61,7 @@ module mm_ram
      input logic [31:0]                   pc_core_id_i,
 
      output logic                         debug_req_o,
+     input  logic                         debug_halted_i,
 
      output logic                         tests_passed_o,
      output logic                         tests_failed_o,
@@ -668,6 +670,11 @@ module mm_ram
    // wdata[28:16] = debug pulse duration or pulse random max range
    // wdata[15]    = random start
    // wdata[14:0]  = start delay or start random max range
+   //
+   // A pulse that asserts debug_req is held past its duration until the core
+   // reports Debug Mode (debug_halted_i): like a real debug module's halt
+   // request (RISC-V Debug Spec 1.0.0 §3.5), it must not expire while the
+   // core is still finishing a stalled instruction.
 
    logic [14:0] debugger_start_cnt_q;
    logic        debug_req_value_q;
@@ -713,11 +720,16 @@ module mm_ram
                      debug_req_o <= debug_req_value_q;
                 end
                 // Count down debug_req pulse duration
-                else if(debug_req_duration_q > 0)begin
+                else if(debug_req_duration_q > 1)begin
                    debug_req_duration_q <= debug_req_duration_q - 1;
-                   // At count == 1, then de-assert debug_req
-                   if(debug_req_duration_q == 1)
+                end
+                // At count == 1, de-assert debug_req -- but hold an asserted
+                // request until the core has entered Debug Mode
+                else if(debug_req_duration_q == 1)begin
+                   if(!debug_req_value_q || debug_halted_i) begin
+                     debug_req_duration_q <= 0;
                      debug_req_o <= !debug_req_value_q;
+                   end
                 end
             end
         end

@@ -79,11 +79,18 @@ TEST_FIXED_ELF ?=
 TEST_ACT       ?=
 ACT_MACROS      = $(CV32E20_DV)/bsp/act4
 
+# Seed for constrained-random sims; each run's results go in
+# simulation_results/<test>/<seed>/. 0 is rejected: Verilator treats
+# +verilator+seed+0 as "pick a random seed", so the directory name would not
+# identify the seed actually used.
+SEED ?= 1
+ifeq ($(SEED),0)
+  $(error SEED=0 is not allowed (Verilator would pick an unrecorded random seed); use 1..2^31-1)
+endif
+
 # Common output directories
-RUN_INDEX               ?= 0
 SIM_RESULTS              = simulation_results
 SIM_TEST_RESULTS         = $(SIM_RESULTS)/$(TEST)
-#SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(RUN_INDEX)
 SIM_RUN_RESULTS          = $(SIM_TEST_RESULTS)/$(SEED)
 SIM_TEST_PROGRAM_RESULTS = $(SIM_RUN_RESULTS)/test_program
 SIM_BSP_RESULTS          = $(SIM_TEST_PROGRAM_RESULTS)/bsp
@@ -113,7 +120,7 @@ VERI_WAIVERS       += -Wno-COMBDLY -Wno-MULTIDRIVEN -Wno-BLKANDNBLK -Wno-lint --
 VERI_COMPILE_FLAGS += $(VERI_WAIVERS) $(SV_CMP_FLAGS)
 #VERI_RUN_FLAGS      = +verilator+rand+reset+1
 VERI_TRACE         ?=
-VERI_OBJ_DIR       ?= cobj_dir
+VERI_OBJ_DIR       ?= $(SIM_RESULTS)/cobj_dir
 VERI_CFLAGS        += -O2
 
 # TB source files for the CV32E20 core
@@ -229,8 +236,7 @@ sanity:
 all: clean_all sanity
 
 ###############################################################################
-# Seed management for constrained-random sims
-SEED           ?= 0
+# Seed management for constrained-random sims (SEED is defined above)
 VERI_RUN_FLAGS += +verilator+seed+$(SEED)
 
 ###############################################################################
@@ -295,7 +301,7 @@ test: verilate $(TEST_PROGRAM_PATH)/$(TEST)/$(TEST).hex
 		+verbose \
 		+test_program=$(TEST_PROGRAM_RELPATH)/$(TEST)/$(TEST).hex \
 		| tee $(SIM_RUN_RESULTS)/$(TEST).log
-	@mv tandem.log $(SIM_RUN_RESULTS)
+	$(if $(filter-out 0,$(SPIKE_TANDEM)),@mv tandem.log $(SIM_RUN_RESULTS))
 	@cp $(TEST_PROGRAM_RELPATH)/$(TEST)/$(TEST).elf $(SIM_RUN_RESULTS)/test_program
 	@cp $(TEST_PROGRAM_RELPATH)/$(TEST)/$(TEST).hex $(SIM_RUN_RESULTS)/test_program
 	@cp $(TEST_PROGRAM_RELPATH)/$(TEST)/$(TEST).itb $(SIM_RUN_RESULTS)/test_program
@@ -387,6 +393,8 @@ gen: $(ACT4_PKG)
 # not a real file) is wrong for every iteration. The loop below passes its
 # own "+elf_file=$$ELF" BEFORE $(VERI_RUN_FLAGS) -- Verilator's
 # $value$plusargs matches the FIRST +elf_file= on the command line.
+# Spike always writes tandem.log to the current directory, so each ELF's copy
+# is moved next to that ELF's log as <name>.tandem.log.
 certify: TEST = certification
 certify: verilate
 	@echo "$(BANNER)"
@@ -416,6 +424,7 @@ certify: verilate
 	  if [ ! -f "$$HEX" ] || [ "$$ELF" -nt "$$HEX" ]; then \
 	    riscv64-unknown-elf-objcopy -O verilog "$$ELF" "$$HEX"; \
 	  fi; \
+	  $(if $(filter-out 0,$(SPIKE_TANDEM)),rm -f tandem.log;) \
 	  set +e; \
 	  "$(VERI_EXECUTABLE)" \
 	    "+elf_file=$$ELF" \
@@ -425,6 +434,7 @@ certify: verilate
 	    > "$$LOG" 2>&1; \
 	  RC=$$?; \
 	  set -e; \
+	  $(if $(filter-out 0,$(SPIKE_TANDEM)),[ ! -f tandem.log ] || mv tandem.log "$${LOG%.log}.tandem.log";) \
 	  if [ $$RC -eq 0 ] && grep -q "ALL TESTS PASSED" "$$LOG"; then \
 	    echo "PASS    $$REL" | tee -a "$$SUMMARY"; \
 	    PASS=$$((PASS+1)); \

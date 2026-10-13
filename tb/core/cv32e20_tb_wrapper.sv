@@ -60,8 +60,9 @@ module cv32e20_tb_wrapper
     logic [31:0]                  data_rdata;
     logic [31:0]                  data_wdata;
 
-    // signals to debug unit
+    // signals to/from debug unit
     logic                         debug_req;
+    logic                         debug_halted;
 
 `ifdef SPIKE_TANDEM
     // RVFI retirement interface from cve2_top (compile with +define+RVFI)
@@ -167,6 +168,7 @@ module cv32e20_tb_wrapper
          .irq_nm_i               ( 1'b0                  ),       // non-maskeable interrupt
 
          .debug_req_i            ( debug_req             ),
+         .debug_halted_o         ( debug_halted          ),
          .dm_halt_addr_i         ( DM_HALTADDRESS        ),
          .dm_exception_addr_i    ( DM_EXCEPTIONADDRESS   ),
          .crash_dump_o           (                       ),
@@ -236,6 +238,7 @@ module cv32e20_tb_wrapper
          .irq_o          ( irq_from_mm_ram                           ),
 
          .debug_req_o    ( debug_req                                 ),
+         .debug_halted_i ( debug_halted                              ),
 
          .pc_core_id_i   ( /*cv32e20_core_i.pc_id*/'0                ),
 
