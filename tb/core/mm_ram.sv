@@ -1,7 +1,6 @@
 // MM_RAM: Memory Mapped virtual peripheral and RAM model.
 //
-// Copyright 2026 Eclipse Foundation
-// Copyright 2025 OpenHW Foundation
+// Copyright 2025, 2026 Eclipse Foundation
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-0.51
 //
 // Copyright 2017 Embecosm Limited <www.embecosm.com>
@@ -19,8 +18,6 @@
 //
 
 module mm_ram
-  // import uvm_pkg::*;
-  // `include "uvm_macros.svh"
  #(
      parameter RAM_ADDR_WIDTH    =  16,
                INSTR_RDATA_WIDTH = 128, // width of read_data on instruction bus
@@ -252,10 +249,9 @@ module mm_ram
         end
         if (!$test$plusargs("rand_stall_obi_disable")) begin
             if ($test$plusargs("max_data_zero_instr_stall")) begin
-                // `uvm_info(RNDSTALL_TAG, "Max data stall, zero instruction stall configuration", UVM_LOW)
-                $display("%m @ %0t: Max data stall, zero instruction stall configuration", $time);
                 // This "knob" creates maximum stalls on data loads/stores, and
                 // no stalls on instruction fetches.  Used for fence.i testing.
+                $display("File %s at Line %0d: Max data stall, zero instruction stall configuration selected by plusarg", `__FILE__, `__LINE__);
                 rnd_stall_regs[RND_STALL_DATA_EN]     = 1;
                 rnd_stall_regs[RND_STALL_DATA_MODE]   = 2;
                 rnd_stall_regs[RND_STALL_DATA_GNT]    = 2;
@@ -263,7 +259,7 @@ module mm_ram
                 rnd_stall_regs[RND_STALL_DATA_MAX]    = 8;
             end
             else begin
-                $display("%m @ %0t: randomizing data and instruction stalls", $time);
+                $display("File %s at Line %0d: randomizing data and instruction stalls", `__FILE__, `__LINE__);
                 rnd_stall_regs[RND_STALL_INSTR_EN]    = 1;
                 rnd_stall_regs[RND_STALL_INSTR_MODE]  = $urandom_range(2,1);
                 rnd_stall_regs[RND_STALL_INSTR_GNT]   = $urandom_range(3,0);
@@ -277,29 +273,24 @@ module mm_ram
             end
         end
         else begin
-            $display("%m @ %0t: plus_arg rand_stall_obi_disable set: zero data stall, zero instruction stall configuration", $time);
+            $display("File %s at Line %0d: zero data stall, zero instruction stall configuration", `__FILE__, `__LINE__);
         end
 
-        // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall enable: %0d", rnd_stall_regs[RND_STALL_INSTR_EN]), UVM_LOW)
-        $display("%m @ %0t: INSTR OBI stall enable: %0d", $time, rnd_stall_regs[RND_STALL_INSTR_EN]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall mode:   %0d", rnd_stall_regs[RND_STALL_INSTR_MODE]), UVM_LOW)
-        $display("%m @ %0t: INSTR OBI stall mode:   %0d", $time, rnd_stall_regs[RND_STALL_INSTR_MODE]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall gnt:    %0d", rnd_stall_regs[RND_STALL_INSTR_GNT]), UVM_LOW)
-        $display("%m @ %0t: INSTR OBI stall gnt:    %0d", $time, rnd_stall_regs[RND_STALL_INSTR_GNT]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall valid:  %0d", rnd_stall_regs[RND_STALL_INSTR_VALID]), UVM_LOW)
-        $display("%m @ %0t: INSTR OBI stall valid:  %0d", $time, rnd_stall_regs[RND_STALL_INSTR_VALID]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("INSTR OBI stall max:    %0d", rnd_stall_regs[RND_STALL_INSTR_MAX]), UVM_LOW)
-        $display("%m @ %0t: INSTR OBI stall max:    %0d", $time, rnd_stall_regs[RND_STALL_INSTR_MAX]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("DATA  OBI stall enable: %0d", rnd_stall_regs[RND_STALL_DATA_EN]), UVM_LOW)
-        $display("%m @ %0t: DATA  OBI stall enable: %0d", $time, rnd_stall_regs[RND_STALL_DATA_EN]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("DATA  OBI stall mode:   %0d", rnd_stall_regs[RND_STALL_DATA_MODE]), UVM_LOW)
-        $display("%m @ %0t: DATA  OBI stall mode:   %0d", $time, rnd_stall_regs[RND_STALL_DATA_MODE]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("DATA  OBI stall gnt:    %0d", rnd_stall_regs[RND_STALL_DATA_GNT]), UVM_LOW)
-        $display("%m @ %0t: DATA  OBI stall gnt:    %0d", $time, rnd_stall_regs[RND_STALL_DATA_GNT]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("DATA  OBI stall valid:  %0d", rnd_stall_regs[RND_STALL_DATA_VALID]), UVM_LOW)
-        $display("%m @ %0t: DATA  OBI stall valid:  %0d", $time, rnd_stall_regs[RND_STALL_DATA_VALID]);
-        // `uvm_info(RNDSTALL_TAG, $sformatf("DATA  OBI stall max:    %0d", rnd_stall_regs[RND_STALL_DATA_MAX]), UVM_LOW)
-        $display("%m @ %0t: DATA  OBI stall max:    %0d", $time, rnd_stall_regs[RND_STALL_DATA_MAX]);
+        $display("\n===============================================================================");
+        $display("Module %m @ %0t:", $time);
+        $display("File %s at Line %0d: INSTR OBI stall configuration", `__FILE__, `__LINE__);
+        $display("OBI stall configuration");
+        $display("  INSTR OBI stall enable: %0d", rnd_stall_regs[RND_STALL_INSTR_EN]);
+        $display("  INSTR OBI stall mode:   %0d", rnd_stall_regs[RND_STALL_INSTR_MODE]);
+        $display("  INSTR OBI stall gnt:    %0d", rnd_stall_regs[RND_STALL_INSTR_GNT]);
+        $display("  INSTR OBI stall valid:  %0d", rnd_stall_regs[RND_STALL_INSTR_VALID]);
+        $display("  INSTR OBI stall max:    %0d", rnd_stall_regs[RND_STALL_INSTR_MAX]);
+        $display("  DATA  OBI stall enable: %0d", rnd_stall_regs[RND_STALL_DATA_EN]);
+        $display("  DATA  OBI stall mode:   %0d", rnd_stall_regs[RND_STALL_DATA_MODE]);
+        $display("  DATA  OBI stall gnt:    %0d", rnd_stall_regs[RND_STALL_DATA_GNT]);
+        $display("  DATA  OBI stall valid:  %0d", rnd_stall_regs[RND_STALL_DATA_VALID]);
+        $display("  DATA  OBI stall max:    %0d", rnd_stall_regs[RND_STALL_DATA_MAX]);
+        $display("===============================================================================\n");
     end : configure_stalls
 
     function bit is_stall_sim();
@@ -387,7 +378,6 @@ module mm_ram
                     end
 
                     sig_string = "";
-                    // `uvm_info(MM_RAM_TAG, $sformatf("Dumping signature:\n%s", sig_string), UVM_LOW)
                     $display("%m @ %0t: Dumping signature", $time);
                     for (logic [31:0] addr = sig_begin_q; addr < sig_end_q; addr +=4) begin
                         $display("%x%x%x%x", dp_ram_inst.mem[addr+3], dp_ram_inst.mem[addr+2],
@@ -511,7 +501,6 @@ module mm_ram
          || data_addr_i == MMADDR_MTIMEH
          || data_addr_i[31:16] == MMADDR_RNDSTALL))
            else
-             // `uvm_fatal(MM_RAM_TAG, $sformatf("out of bounds write to %08x with %08x", data_addr_i, data_wdata_i))
              $fatal(1, "out of bounds write to %08x with %08x", data_addr_i, data_wdata_i);
 
     logic[31:0] data_rdata_mux;
@@ -531,12 +520,9 @@ module mm_ram
         end else if (select_rdata_q == TICKS) begin
             data_rdata_mux = cycle_count_q;
             if (cycle_count_overflow_q) begin
-                // `uvm_fatal(MM_RAM_TAG, "cycle counter read after overflow");
                 $fatal(1, "cycle counter read after overflow");
             end
         end else if (select_rdata_q == ERR) begin
-            // `uvm_error(MM_RAM_TAG, $sformatf("out of bounds read from %08x (RAM_ADDR_WIDTH=%0d; dm_halt_addri=%08x, DBG_ADDR_WIDTH=%0d)",
-            //                                  data_addr_i, RAM_ADDR_WIDTH, dm_halt_addr_i, DBG_ADDR_WIDTH))
             $error("out of bounds read from %08x (RAM_ADDR_WIDTH=%0d; dm_halt_addri=%08x, DBG_ADDR_WIDTH=%0d)",
                    data_addr_i, RAM_ADDR_WIDTH, dm_halt_addr_i, DBG_ADDR_WIDTH);
         end
