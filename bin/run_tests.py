@@ -13,11 +13,11 @@ For each selected test the script invokes `make test TEST=<name> ...` in the
 chosen testbench's sim directory, then parses the per-test log it leaves behind
 for the verdict banner:
 
-    core : sim/core/simulation_results/<name>/<run>/test_program/<name>.log
+    core : sim/core/simulation_results/<name>/<seed>/<name>.log
            "ALL TESTS PASSED"   -> PASS   (tb/core/tb_top.sv)
            "TEST(S) FAILED!"    -> FAIL
 
-    uvmt : sim/uvmt/vsim_results/<cfg>/<name>/<run>/vsim-<name>.log
+    uvmt : sim/uvmt/vsim_results/<cfg>/<name>/0/vsim-<name>.log
            "SIMULATION PASSED"  -> PASS   (tb/uvmt/uvmt_cv32e20_tb.sv;
                                            includes "PASSED with WARNINGS")
            "SIMULATION FAILED"  -> FAIL
@@ -31,15 +31,36 @@ run once beforehand to clone and compile the corev-dv/riscv-dv packages
 script runs `make corev-dv` itself before running any tests, and aborts if
 that setup step fails.
 
-For corev-dv tests, --run-index also selects which generated program directory
-is used: run_test() passes it through as both RUN_INDEX (where the build/run
-step looks for the program) and GEN_START_INDEX (where gen_corev-dv writes it).
-run_test() also passes SEED=random for every corev-dv test, so each invocation
-uses a fresh RNDSEED (mk/uvmt/uvmt.mk derives it from `date +%N`) for both the
-corev-dv generator and the env-level randomization -- re-running the same
---run-index does NOT reproduce the same generated program/stimulus anymore.
-The actual seed used is recorded in that run's vsim-<name>.log header
-(`-sv_seed <value>`) for later replay via SEED=<value>.
+Seeds
+-----
+--seed sets the seed of the test run itself (env-level randomization, e.g.
+OBI stall knobs) for every test, on both testbenches: an integer
+1..2147483647, or 'random'. The default is 1, so a plain run is reproducible.
+
+core: each run's results go in sim/core/simulation_results/<test>/<seed>/;
+re-running a test with the same seed overwrites that directory. The seed is
+passed as SEED=<n> (sim/core/Makefile turns it into +verilator+seed+<n>).
+With --seed random, this script picks a fresh seed for each test. 0 is not
+accepted: Verilator treats +verilator+seed+0 as "pick a random seed", so the
+directory name would not identify the seed actually used.
+
+uvmt: the seed is passed through as SEED=<value> (mk/uvmt/uvmt.mk resolves
+'random' itself, from `date +%N`); results stay in
+vsim_results/<cfg>/<test>/0/ (uvmt's default RUN_INDEX).
+
+corev-dv tests (uvmt only) also have a separate program-generation step
+(gen_corev-dv), seeded independently by --gen-seed ('random' by default, so
+re-running does NOT reproduce the same generated program unless --gen-seed
+is given). Hand-written tests have no generation step, so their GEN_SEED is
+always "-".
+
+The summary table's GEN_SEED/RUN_SEED columns show the seed each step
+actually used, recovered from the run's own output (uvmt: vsim's
+`-sv_seed <value>` banner; core: tb_top.sv's "Simulation running with seed:
+<value>"), so any run can be replayed with --gen-seed/--seed.
+
+--parse-only (core) reports every test/seed result directory it finds, one
+row each (oldest first), or only one seed's with --seed N.
 
 Usage
 -----
@@ -72,9 +93,14 @@ PATH, as for a normal `make test`.
     # Run ONLY the corev-dv generated regression tests (uvmt only):
     bin/run_tests.py --tb uvmt --corev-dv-only
 
-    # Skip simulation; just re-summarize logs from a previous run:
+    # Skip simulation; just re-summarize existing logs (core: every
+    # test/seed result directory, or one seed's with --seed N):
     bin/run_tests.py --parse-only
+    bin/run_tests.py --parse-only --seed 12345 misalign
     bin/run_tests.py --tb uvmt --parse-only
+
+    # Run with a fresh random seed per test (default seed is 1):
+    bin/run_tests.py --seed random
 
     # Run up to 4 tests concurrently (uvmt only is verified safe -- see below):
     bin/run_tests.py --tb uvmt --corev-dv-only --jobs 4
@@ -82,15 +108,20 @@ PATH, as for a normal `make test`.
     # Replay a specific prior corev-dv run from its logged seeds (gen_corev-dv
     # and test are independent UVM environments/vsim invocations, each with
     # their own seed -- see the summary table's GEN_SEED/RUN_SEED columns):
-    bin/run_tests.py --tb uvmt --gen-seed 363891135 --run-seed 354410829 \
+    bin/run_tests.py --tb uvmt --gen-seed 363891135 --seed 354410829 \
         corev_rand_instr_and_data_stalls
+
+    # Replay a specific prior run's env-level randomization (e.g. OBI stall
+    # knobs) for a hand-written test -- there's no --gen-seed here, since
+    # hand-written tests have no generation step, only the run itself:
+    bin/run_tests.py --seed 12345 misalign
 
     # Collect code coverage (uvmt only; equivalent to `make test ... COV=1` per test):
     bin/run_tests.py --tb uvmt --cov hello-world
 
     # Run in tandem with the Spike ISS, comparing every retired instruction
     # (core only; equivalent to `make test ... SPIKE_TANDEM=1` per test; see
-    # docs/spike-tandem.md):
+    # reference/spike-tandem.md):
     bin/run_tests.py --spike-tandem
 
     # Run the ACT4 compliance-ELF sweep (core only; equivalent to
@@ -107,14 +138,17 @@ PATH, as for a normal `make test`.
 
     # Other options:
     #   --cfg NAME      uvmt config subdirectory                (default: default)
-    #   --run-index N   RUN_INDEX subdirectory                  (default: 0)
-    #   --gen-seed SEED corev-dv generator SEED ('random' or a literal value)
-    #   --run-seed SEED test-step SEED ('random' or a literal value)
+    #   --gen-seed SEED corev-dv generator SEED ('random' or a literal
+    #                   value); no effect on hand-written tests (no
+    #                   generation step exists for them)
+    #   --seed SEED     test-run seed: 1..2147483647 or 'random'
+    #                   (default: 1); applies to every test, on both
+    #                   testbenches
     #   --timeout SECS  per-test timeout                        (default: 1800)
     #   --jobs N, -j N  run up to N tests concurrently           (default: 1)
     #   --cov           collect code coverage (uvmt only)
     #   --spike-tandem  run in tandem with Spike, comparing every retired
-    #                   instruction (core only; see docs/spike-tandem.md).
+    #                   instruction (core only; see reference/spike-tandem.md).
     #                   Builds Spike via `make spike_lib` first if needed --
     #                   can take several minutes the first time.
     #   --certify       run the ACT4 compliance-ELF sweep (`make certify`,
@@ -145,8 +179,8 @@ design. If --cov is also given, that one-time compile is done with COV=1 too
 (otherwise the shared design has no +cover instrumentation and every
 worker's .ucdb ends up with assertions/covergroups but zero statement/
 branch/condition coverage, since COMP=NO skips each worker's own vopt) --
-each worker runs in its own per-test/run-index run directory
-(sim/uvmt/vsim_results/<cfg>/<test>/<run_index>/), which `make`'s `run`
+each worker runs in its own per-test run directory
+(sim/uvmt/vsim_results/<cfg>/<test>/0/), which `make`'s `run`
 target `vmap`s back to the shared read-only compiled library. Many `vsim`
 processes reading one compiled snapshot concurrently is a standard, safe
 regression-farm pattern; it's concurrent *compilation* that isn't safe.
@@ -162,7 +196,7 @@ batches.
 
 --tb core (Verilator) has NOT been verified race-free under --jobs > 1: `make
 test` for the core TB also recompiles into a shared directory
-(sim/core/cobj_dir) on every invocation, and no COMP=NO-equivalent skip-flag
+(sim/core/simulation_results/cobj_dir) on every invocation, and no COMP=NO-equivalent skip-flag
 was found for it. Prefer --jobs 1 there unless you've confirmed otherwise.
 
 Also keep the vsim license pool in mind (`lmutil lmstat`) -- each concurrent
@@ -173,6 +207,7 @@ svverification, mtiverification, ...) for the duration of its run.
 import argparse
 import concurrent.futures
 import os
+import random
 import re
 import signal
 import subprocess
@@ -281,33 +316,94 @@ COREV_DV_TESTS = [
 ]
 
 
-def log_path(tb, test, run_index, cfg):
-    """Location of the per-test simulation log for the given testbench."""
-    sim_dir = TESTBENCHES[tb]["sim_dir"]
+# Verilator's +verilator+seed+ range; 0 means "pick a random seed" there, so
+# it can't name a reproducible result directory.
+MAX_SEED = 2**31 - 1
+DEFAULT_SEED = 1
+
+# uvmt keeps mk/uvmt/uvmt.mk's default RUN_INDEX/GEN_START_INDEX for now.
+UVMT_RUN_INDEX = 0
+
+
+def seed_arg(text):
+    """argparse type for --seed: 'random' or an integer 1..MAX_SEED."""
+    if text == "random":
+        return text
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"invalid seed {text!r}: expected an integer 1..{MAX_SEED} or 'random'")
+    if not 1 <= value <= MAX_SEED:
+        why = (" (0 would make Verilator pick an unrecorded random seed)"
+               if value == 0 else "")
+        raise argparse.ArgumentTypeError(
+            f"invalid seed {value}: must be 1..{MAX_SEED}{why}")
+    return value
+
+
+def resolve_seed(seed):
+    """Integer seed to run with: a fresh random one for 'random'."""
+    if seed == "random":
+        return random.randint(1, MAX_SEED)
+    return seed
+
+
+def core_results_dir(test):
+    """sim/core results for one test; holds one subdirectory per seed."""
+    return TESTBENCHES["core"]["sim_dir"] / "simulation_results" / test
+
+
+def log_path(tb, test, seed, cfg):
+    """Location of the per-test simulation log for the given testbench
+    (seed is only used by core; uvmt results aren't keyed by seed)."""
     if tb == "core":
-        return (sim_dir / "simulation_results" / test / str(run_index)
-                / "test_program" / f"{test}.log")
+        return core_results_dir(test) / str(seed) / f"{test}.log"
     # uvmt / vsim
-    return (sim_dir / "vsim_results" / cfg / test / str(run_index)
-            / f"vsim-{test}.log")
+    return (TESTBENCHES[tb]["sim_dir"] / "vsim_results" / cfg / test
+            / str(UVMT_RUN_INDEX) / f"vsim-{test}.log")
 
 
-def gen_log_path(tb, test, run_index, cfg):
+def gen_log_path(tb, test, cfg):
     """Location of the corev-dv generation step's own log (a separate vsim
     run from the test's own log, hence its own seed). "_1" is
     GEN_NUM_TESTS's unoverridden Makefile default."""
     sim_dir = TESTBENCHES[tb]["sim_dir"]
     return (sim_dir / "vsim_results" / cfg / "corev-dv" / test
-            / f"{test}_{run_index}_1.log")
+            / f"{test}_{UVMT_RUN_INDEX}_1.log")
+
+
+def seed_dirs(results_dir, result_file, seed=None):
+    """Seed-named subdirectories of results_dir, oldest first by the
+    modification time of result_file (a path relative to each directory) --
+    or just seed's, if one is given and it exists."""
+    if seed is not None:
+        d = results_dir / str(seed)
+        return [d] if d.is_dir() else []
+    if not results_dir.is_dir():
+        return []
+
+    def mtime(d):
+        f = d / result_file
+        return (f if f.is_file() else d).stat().st_mtime
+
+    dirs = [d for d in results_dir.iterdir() if d.is_dir() and d.name.isdigit()]
+    return sorted(dirs, key=mtime)
 
 
 _SEED_RE = re.compile(r"-sv_seed\s+(\S+)")
+_CORE_SEED_RE = re.compile(r"Simulation running with seed:\s+(\S+)")
 
 
 def extract_seed(text):
-    """Pull the actual -sv_seed a vsim run used from its output/log -- needed
-    when SEED=random, since the Makefile derives the real value internally."""
+    """Pull the actual seed a run used from its output/log -- needed for
+    uvmt's SEED=random, which mk/uvmt/uvmt.mk resolves itself. uvmt prints
+    it via vsim's own -sv_seed banner; core via tb_top.sv's $display of
+    $get_initial_random_seed()."""
     m = _SEED_RE.search(text)
+    if m:
+        return m.group(1)
+    m = _CORE_SEED_RE.search(text)
     return m.group(1) if m else None
 
 
@@ -384,7 +480,7 @@ def setup_spike_lib(tb, timeout):
     env = make_env(tbcfg)
 
     print(f"[Setup/{tb}] make spike_lib (tandem-patched Spike; see "
-          "docs/spike-tandem.md) ...")
+          "reference/spike-tandem.md) ...")
     try:
         returncode, _, _ = _run(cmd, tbcfg["sim_dir"], env, timeout, capture=False)
     except subprocess.TimeoutExpired:
@@ -422,32 +518,29 @@ def setup_comp(tb, timeout, cov=False):
                   "no test can build without it")
 
 
-def run_test(tb, test, run_index, cfg, timeout, quiet, extra_make_args=None,
-             label=None, gen_seed="random", run_seed="random", cov=False,
+def run_test(tb, test, cfg, timeout, quiet, extra_make_args=None,
+             label=None, gen_seed="random", seed=DEFAULT_SEED, cov=False,
              spike_tandem=False):
     """Build+run one test; return (outcome, detail, gen_seed_used, run_seed_used).
 
     corev-dv tests run gen_corev-dv and test as two independent vsim
     invocations with independent seeds (SEED=random re-derives per step, so
     one combined seed couldn't replay a run where the two steps differed).
-    gen_seed_used/run_seed_used are the actual -sv_seed each step used; both
-    None for non-corev-dv tests.
+    gen_seed_used is None for non-corev-dv tests.
+    seed: --seed's value; for core, 'random' is resolved here (one fresh
+    seed per call) and results land in simulation_results/<test>/<seed>/.
     extra_make_args: extra make args appended (e.g. ["COMP=NO"] after setup_comp()).
     cov: COV=1 for the firmware build+run only -- skipped for gen_corev-dv,
     which is unrelated to the DUT.
     label: prefixes output when --jobs > 1 so workers stay distinguishable.
-    spike_tandem: SPIKE_TANDEM=1, core only -- see docs/spike-tandem.md.
+    spike_tandem: SPIKE_TANDEM=1, core only -- see reference/spike-tandem.md.
     """
     tbcfg = TESTBENCHES[tb]
     env = make_env(tbcfg)
     gen_seed_used = None
 
     if test in COREV_DV_TESTS:
-        # gen_corev-dv writes into GEN_START_INDEX, independent of RUN_INDEX
-        # (the build/run step's own dir) -- without this, a nonzero
-        # --run-index would build from an empty dir with no generated program.
-        gen_cmd = (["make", "gen_corev-dv", f"TEST={test}",
-                     f"GEN_START_INDEX={run_index}", f"SEED={gen_seed}"]
+        gen_cmd = (["make", "gen_corev-dv", f"TEST={test}", f"SEED={gen_seed}"]
                     + tbcfg["make_args"])
         if extra_make_args:
             gen_cmd += extra_make_args
@@ -462,7 +555,7 @@ def run_test(tb, test, run_index, cfg, timeout, quiet, extra_make_args=None,
 
         gen_seed_used = extract_seed(gstdout + gstderr)
         if gen_seed_used is None:
-            gpath = gen_log_path(tb, test, run_index, cfg)
+            gpath = gen_log_path(tb, test, cfg)
             if gpath.is_file():
                 gen_seed_used = extract_seed(gpath.read_text(errors="replace"))
 
@@ -470,9 +563,11 @@ def run_test(tb, test, run_index, cfg, timeout, quiet, extra_make_args=None,
             return ("ERROR", f"gen_corev-dv failed (exit {returncode})",
                     gen_seed_used, None)
 
-    cmd = ["make", "test", f"TEST={test}", f"RUN_INDEX={run_index}"]
-    if test in COREV_DV_TESTS:
-        cmd.append(f"SEED={run_seed}")
+    # core resolves 'random' here (the seed names the results directory);
+    # uvmt.mk resolves SEED=random itself.
+    if tb == "core":
+        seed = resolve_seed(seed)
+    cmd = ["make", "test", f"TEST={test}", f"SEED={seed}"]
     if cov:
         cmd.append("COV=1")
     if spike_tandem:
@@ -502,13 +597,15 @@ def run_test(tb, test, run_index, cfg, timeout, quiet, extra_make_args=None,
     run_seed_used = extract_seed(console)
     outcome = classify(console, tbcfg)
     if outcome == "ERROR" or run_seed_used is None:
-        path = log_path(tb, test, run_index, cfg)
+        path = log_path(tb, test, seed, cfg)
         if path.is_file():
             log_text = path.read_text(errors="replace")
             if outcome == "ERROR":
                 outcome = classify(log_text, tbcfg)
             if run_seed_used is None:
                 run_seed_used = extract_seed(log_text)
+    if run_seed_used is None and tb == "core":
+        run_seed_used = str(seed)
 
     if outcome != "ERROR":
         return outcome, "", gen_seed_used, run_seed_used
@@ -517,18 +614,33 @@ def run_test(tb, test, run_index, cfg, timeout, quiet, extra_make_args=None,
     return "ERROR", "no verdict banner", gen_seed_used, run_seed_used
 
 
-def parse_only(tb, test, run_index, cfg):
-    """Read an existing log file without re-running the simulation; return
-    (outcome, detail, gen_seed_used, run_seed_used), same shape as run_test()."""
-    path = log_path(tb, test, run_index, cfg)
+def parse_only(tb, test, cfg, seed=None):
+    """Read existing logs without re-running the simulation; return a list
+    of (outcome, detail, gen_seed_used, run_seed_used), each the same shape
+    as run_test()'s result. core: one entry per seed directory under
+    simulation_results/<test>/ (oldest first), or just seed's if given.
+    uvmt: a single entry."""
+    if tb == "core":
+        dirs = seed_dirs(core_results_dir(test), f"{test}.log", seed)
+        if not dirs:
+            return [("ERROR", "no log file", None,
+                     str(seed) if seed is not None else None)]
+        return [_parse_log(tb, test, d / f"{test}.log", cfg, d.name)
+                for d in dirs]
+    return [_parse_log(tb, test, log_path(tb, test, None, cfg), cfg, None)]
+
+
+def _parse_log(tb, test, path, cfg, dir_seed):
+    """One parse_only() row. The seed shown is the one the log reports,
+    falling back to its directory's name (core)."""
     if not path.is_file():
-        return "ERROR", "no log file", None, None
+        return "ERROR", "no log file", None, dir_seed
 
     text = path.read_text(errors="replace")
-    run_seed_used = extract_seed(text)
+    run_seed_used = extract_seed(text) or dir_seed
     gen_seed_used = None
     if test in COREV_DV_TESTS:
-        gpath = gen_log_path(tb, test, run_index, cfg)
+        gpath = gen_log_path(tb, test, cfg)
         if gpath.is_file():
             gen_seed_used = extract_seed(gpath.read_text(errors="replace"))
 
@@ -538,12 +650,13 @@ def parse_only(tb, test, run_index, cfg):
 _CERTIFY_SUMMARY_RE = re.compile(r"TOTAL=(\d+)\s+PASS=(\d+)\s+FAIL=(\d+)")
 
 
-def certify_summary_path(run_index):
+CERTIFY_SUMMARY = Path("test_program") / "certification_summary.txt"
+
+
+def certify_summary_path(seed):
     """Location of certification_summary.txt (certify hardwires
     TEST=certification, so this path isn't parameterized by tb/test/cfg)."""
-    return (TESTBENCHES["core"]["sim_dir"] / "simulation_results"
-            / "certification" / str(run_index) / "test_program"
-            / "certification_summary.txt")
+    return core_results_dir("certification") / str(seed) / CERTIFY_SUMMARY
 
 
 def classify_certify_summary(summary_path):
@@ -562,10 +675,11 @@ def classify_certify_summary(summary_path):
                      f"failed -- see {summary_path}")
 
 
-def run_certify(run_index, timeout, quiet, spike_tandem=False, filter_=None):
-    """Run `make certify` (the ACT4 compliance-ELF sweep); return (outcome,
-    detail). Unlike run_test(), one `make` invocation runs every ELF and
-    self-reports to certification_summary.txt (see classify_certify_summary()).
+def run_certify(seed, timeout, quiet, spike_tandem=False, filter_=None):
+    """Run `make certify` (the ACT4 compliance-ELF sweep) with one seed for
+    every ELF ('random' resolved here); return (outcome, detail, seed_used).
+    Unlike run_test(), one `make` invocation runs every ELF and self-reports
+    to certification_summary.txt (see classify_certify_summary()).
 
     spike_tandem: SPIKE_TANDEM=1 -- see the certify target's own comment in
     sim/core/Makefile for why +elf_file ordering matters there.
@@ -573,7 +687,8 @@ def run_certify(run_index, timeout, quiet, spike_tandem=False, filter_=None):
     """
     tbcfg = TESTBENCHES["core"]
     env = make_env(tbcfg)
-    cmd = ["make", "certify", f"RUN_INDEX={run_index}"]
+    seed = resolve_seed(seed)
+    cmd = ["make", "certify", f"SEED={seed}"]
     if spike_tandem:
         cmd.append("SPIKE_TANDEM=1")
     if filter_:
@@ -583,9 +698,9 @@ def run_certify(run_index, timeout, quiet, spike_tandem=False, filter_=None):
     try:
         returncode, stdout, stderr = _run(cmd, tbcfg["sim_dir"], env, timeout, capture=True)
     except subprocess.TimeoutExpired:
-        return "ERROR", f"timed out after {timeout}s"
+        return "ERROR", f"timed out after {timeout}s", seed
     except OSError as exc:
-        return "ERROR", f"could not launch make: {exc}"
+        return "ERROR", f"could not launch make: {exc}", seed
 
     if not quiet:
         # Echo certify's own PASS/FAIL/TOTAL= lines, not the make/verilator noise.
@@ -603,14 +718,14 @@ def run_certify(run_index, timeout, quiet, spike_tandem=False, filter_=None):
                 with _print_lock:
                     print(f"    [certify make output]\n{console}")
 
-    summary_path = certify_summary_path(run_index)
+    summary_path = certify_summary_path(seed)
     if not summary_path.is_file() and returncode != 0:
-        return "ERROR", f"make certify exited {returncode} (no summary written)"
+        return "ERROR", f"make certify exited {returncode} (no summary written)", seed
     if returncode != 0 and "No .elf files found" in stdout:
         return "ERROR", (f"make certify exited {returncode}: no compliance "
                           "ELFs found -- run `make gen` or `make gen-certify` "
-                          "in sim/core first")
-    return classify_certify_summary(summary_path)
+                          "in sim/core first"), seed
+    return (*classify_certify_summary(summary_path), seed)
 
 
 def main():
@@ -632,11 +747,11 @@ def main():
                          "only); cannot be combined with test names, "
                          "--include-parked, or --include-corev-dv")
     ap.add_argument("--parse-only", action="store_true",
-                    help="do not run; just parse existing logs in the results directory")
+                    help="do not run; just parse existing logs in the results "
+                         "directory (core: every <test>/<seed>/ found, one "
+                         "row each, or only --seed N's)")
     ap.add_argument("--cfg", default="default",
                     help="uvmt config subdirectory under vsim_results (default: default)")
-    ap.add_argument("--run-index", type=int, default=0,
-                    help="RUN_INDEX subdirectory to use (default: 0)")
     ap.add_argument("--timeout", type=int, default=1800,
                     help="per-test timeout in seconds (default: 1800; the "
                          "interrupt-heavy corev-dv templates routinely take "
@@ -645,15 +760,19 @@ def main():
                     help="SEED for the corev-dv generation step (gen_corev-dv; "
                          "the random-instruction-stream generator). 'random' "
                          "(default) or a literal value to replay a specific "
-                         "prior run -- see --run-seed, a fully independent "
+                         "prior run -- see --seed, a fully independent "
                          "knob (gen_corev-dv and test are separate UVM "
                          "environments/vsim invocations, each seeded "
                          "separately). No effect on non-corev-dv tests.")
-    ap.add_argument("--run-seed", default="random",
-                    help="SEED for the test step (the actual firmware run's "
-                         "env-level randomization, e.g. OBI stall knobs). "
-                         "'random' (default) or a literal value to replay a "
-                         "specific prior run. No effect on non-corev-dv tests.")
+    ap.add_argument("--seed", type=seed_arg, default=None,
+                    help="seed for the test run itself (env-level "
+                         "randomization, e.g. OBI stall knobs): an integer "
+                         f"1..{MAX_SEED}, or 'random' for a fresh seed per "
+                         f"test (default: {DEFAULT_SEED}). Applies to every "
+                         "test, on both testbenches. core results go in "
+                         "simulation_results/<test>/<seed>/, overwriting a "
+                         "previous run with the same seed. With --parse-only, "
+                         "selects which seed's results to read (default: all).")
     ap.add_argument("--cov", action="store_true",
                     help="collect code coverage (uvmt only; equivalent to "
                          "`make test ... COV=1` per test). Requires "
@@ -665,7 +784,7 @@ def main():
                     help="run in tandem with the Spike ISS, comparing every "
                          "retired instruction (core only; equivalent to "
                          "`make test ... SPIKE_TANDEM=1` per test) -- see "
-                         "docs/spike-tandem.md. Combine with --certify to "
+                         "reference/spike-tandem.md. Combine with --certify to "
                          "run the ACT4 compliance-ELF sweep in tandem too.")
     ap.add_argument("--certify", action="store_true",
                     help="run the ACT4 compliance-ELF sweep (core only; "
@@ -693,6 +812,13 @@ def main():
 
     if args.jobs < 1:
         ap.error("--jobs must be >= 1")
+
+    if args.parse_only and args.seed == "random":
+        ap.error("--seed random has no meaning with --parse-only (give a "
+                  "specific seed, or omit --seed to report every seed)")
+    # Runs default to DEFAULT_SEED; --parse-only without --seed reads every
+    # seed directory, so keep None there.
+    seed = DEFAULT_SEED if args.seed is None else args.seed
 
     if args.cov and args.tb != "uvmt":
         ap.error("--cov requires --tb uvmt (Questa coverage; the core "
@@ -745,15 +871,22 @@ def main():
               + (" (spike-tandem)" if args.spike_tandem else "")
               + (f" FILTER={args.filter}" if args.filter else "") + " ...")
         if args.parse_only:
-            outcome, detail = classify_certify_summary(
-                certify_summary_path(args.run_index))
+            dirs = seed_dirs(core_results_dir("certification"),
+                             CERTIFY_SUMMARY, args.seed)
+            if dirs:
+                runs = [(*classify_certify_summary(d / CERTIFY_SUMMARY), d.name)
+                        for d in dirs]
+            else:
+                runs = [("ERROR", "no certification summary found",
+                         args.seed if args.seed is not None else "-")]
         else:
-            outcome, detail = run_certify(
-                args.run_index, args.timeout, args.quiet,
-                spike_tandem=args.spike_tandem, filter_=args.filter)
+            runs = [run_certify(seed, args.timeout, args.quiet,
+                                spike_tandem=args.spike_tandem,
+                                filter_=args.filter)]
         print()
-        print(f"certify: {outcome} {detail}".rstrip())
-        sys.exit(0 if outcome == "PASS" else 1)
+        for outcome, detail, seed in runs:
+            print(f"certify (seed {seed}): {outcome} {detail}".rstrip())
+        sys.exit(0 if all(r[0] == "PASS" for r in runs) else 1)
 
     needs_corev_dv = any(test in COREV_DV_TESTS for test in selected)
     if needs_corev_dv and not args.parse_only:
@@ -771,44 +904,50 @@ def main():
         else:
             print(f"warning: --jobs {args.jobs} with --tb core has not been "
                   "verified race-free against the shared Verilator build "
-                  "directory (sim/core/cobj_dir); proceeding anyway, but "
+                  "directory (sim/core/simulation_results/cobj_dir); "
+                  "proceeding anyway, but "
                   "prefer --jobs 1 unless you've confirmed it's safe.")
 
     def run_one(test):
+        """Rows (test, outcome, detail, gen_seed, run_seed) for one test --
+        several when --parse-only finds more than one seed directory."""
         action = "Parsing" if args.parse_only else "Running"
         with _print_lock:
             print(f"[{action}/{args.tb}] {test} ...")
         if args.parse_only:
-            outcome, detail, gen_seed, run_seed = parse_only(
-                args.tb, test, args.run_index, args.cfg)
+            rows = parse_only(args.tb, test, args.cfg, args.seed)
         else:
-            outcome, detail, gen_seed, run_seed = run_test(
-                args.tb, test, args.run_index, args.cfg,
+            rows = [run_test(
+                args.tb, test, args.cfg,
                 args.timeout, args.quiet,
                 extra_make_args=extra_make_args,
                 label=test if args.jobs > 1 else None,
-                gen_seed=args.gen_seed, run_seed=args.run_seed,
-                cov=args.cov, spike_tandem=args.spike_tandem)
+                gen_seed=args.gen_seed, seed=seed,
+                cov=args.cov, spike_tandem=args.spike_tandem)]
         if args.jobs > 1:
             done = "Parsed" if args.parse_only else "Done"
             with _print_lock:
-                print(f"[{done}/{args.tb}] {test}: {outcome} {detail}".rstrip())
-        return test, outcome, detail, gen_seed, run_seed
+                for outcome, detail, _, _ in rows:
+                    print(f"[{done}/{args.tb}] {test}: {outcome} {detail}".rstrip())
+        return [(test, *row) for row in rows]
 
     width = max(len(t) for t in selected)
     if args.jobs == 1:
-        results = [run_one(test) for test in selected]
+        per_test = [run_one(test) for test in selected]
     else:
         outcomes = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-            futures = [pool.submit(run_one, test) for test in selected]
+            futures = {pool.submit(run_one, test): test for test in selected}
             for future in concurrent.futures.as_completed(futures):
-                test, outcome, detail, gen_seed, run_seed = future.result()
-                outcomes[test] = (test, outcome, detail, gen_seed, run_seed)
+                outcomes[futures[future]] = future.result()
         # Report in the original --selected order regardless of completion order.
-        results = [outcomes[test] for test in selected]
+        per_test = [outcomes[test] for test in selected]
+    results = [row for rows in per_test for row in rows]
 
-    # GEN_SEED/RUN_SEED are "-" for non-corev-dv tests (see run_test()).
+    # GEN_SEED is "-" for non-corev-dv tests (no generate step -- see
+    # run_test()); RUN_SEED is populated for every test now. Either column
+    # can still show "-" if extract_seed() couldn't find a banner (e.g. a
+    # build failure before the run ever printed one).
     def _fmt_seed(s):
         return s if s is not None else "-"
 

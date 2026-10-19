@@ -60,8 +60,9 @@ module cv32e20_tb_wrapper
     logic [31:0]                  data_rdata;
     logic [31:0]                  data_wdata;
 
-    // signals to debug unit
+    // signals to/from debug unit
     logic                         debug_req;
+    logic                         debug_halted;
 
 `ifdef SPIKE_TANDEM
     // RVFI retirement interface from cve2_top (compile with +define+RVFI)
@@ -94,12 +95,24 @@ module cv32e20_tb_wrapper
     logic [63:0] rvfi_ext_mcycle;
 
     // Whitebox probes required for RVFI (aka cross-module references or XMRs).
-    // Refer to docs/spike-tandem.md for details.
+    // Refer to reference/spike-tandem.md for details.
 
     // 'rvfi_intr' only exposed LSB and Spike tandem needs the full value.
     wire [8:0] rvfi_intr_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_intr[0];
     wire [3:0] rvfi_dbg_cause = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg[0];
     wire rvfi_dbg_mode = cv32e20_top_inst.u_cve2_core.rvfi_stage_dbg_mode[0];
+
+    // Whitebox probe: actual bytes at rvfi_mem_addr in the testbench RAM's
+    // backing store, read directly (same dp_ram_inst.mem[] hierarchical-
+    // reference technique mm_ram.sv's ACT4 signature-dump logic already
+    // uses). Feeds spike_tandem's post-write-landed check, independent of
+    // the RTL's own RVFI self-report. Always driven; spike_tandem.sv gates
+    // whether it's meaningful (store vs. not, in-range RAM vs. peripheral).
+    wire [31:0] rvfi_mem_actual_wdata;
+    assign rvfi_mem_actual_wdata[ 7: 0] = mm_ram_inst.dp_ram_inst.mem[rvfi_mem_addr + 0];
+    assign rvfi_mem_actual_wdata[15: 8] = mm_ram_inst.dp_ram_inst.mem[rvfi_mem_addr + 1];
+    assign rvfi_mem_actual_wdata[23:16] = mm_ram_inst.dp_ram_inst.mem[rvfi_mem_addr + 2];
+    assign rvfi_mem_actual_wdata[31:24] = mm_ram_inst.dp_ram_inst.mem[rvfi_mem_addr + 3];
 `endif
 
     // irq signals (driven from mm_ram virtual interrupt peripheral)
@@ -155,6 +168,7 @@ module cv32e20_tb_wrapper
          .irq_nm_i               ( 1'b0                  ),       // non-maskeable interrupt
 
          .debug_req_i            ( debug_req             ),
+         .debug_halted_o         ( debug_halted          ),
          .dm_halt_addr_i         ( DM_HALTADDRESS        ),
          .dm_exception_addr_i    ( DM_EXCEPTIONADDRESS   ),
          .crash_dump_o           (                       ),
@@ -224,6 +238,7 @@ module cv32e20_tb_wrapper
          .irq_o          ( irq_from_mm_ram                           ),
 
          .debug_req_o    ( debug_req                                 ),
+         .debug_halted_i ( debug_halted                              ),
 
          .pc_core_id_i   ( /*cv32e20_core_i.pc_id*/'0                ),
 
@@ -266,7 +281,8 @@ module cv32e20_tb_wrapper
          .rvfi_intr_cause( rvfi_intr_cause),
          .rvfi_ext_irq   ( irq_from_mm_ram),
          .rvfi_dbg_cause ( rvfi_dbg_cause ),
-         .rvfi_dbg_mode  ( rvfi_dbg_mode  )
+         .rvfi_dbg_mode  ( rvfi_dbg_mode  ),
+         .rvfi_mem_actual_wdata ( rvfi_mem_actual_wdata )
         );
 `endif
 
