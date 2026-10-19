@@ -79,10 +79,7 @@ TEST_FIXED_ELF ?=
 TEST_ACT       ?=
 ACT_MACROS      = $(CV32E20_DV)/bsp/act4
 
-# Seed for constrained-random sims; each run's results go in
-# simulation_results/<test>/<seed>/. 0 is rejected: Verilator treats
-# +verilator+seed+0 as "pick a random seed", so the directory name would not
-# identify the seed actually used.
+# Seed for constrained-random sims; each run's results written to 'simulation_results/<test>/<seed>/'.
 SEED ?= 1
 ifeq ($(SEED),0)
   $(error SEED=0 is not allowed (Verilator would pick an unrecorded random seed); use 1..2^31-1)
