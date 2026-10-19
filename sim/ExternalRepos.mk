@@ -25,6 +25,11 @@ RISCVDV_REPO    ?= https://github.com/google/riscv-dv
 RISCVDV_BRANCH  ?= master
 RISCVDV_HASH    ?= 0b625258549e733082c12e5dc749f05aefb07d5a
 
+# SVLIB
+SVLIB_REPO       ?= https://bitbucket.org/verilab/svlib/src/master/svlib
+SVLIB_BRANCH     ?= master
+SVLIB_HASH       ?= c25509a7e54a880fe8f58f3daa2f891d6ecf6428
+
 # ACT4 (RISC-V Architectural Certification Tests)
 ACT4_REPO   ?= https://github.com/riscv/riscv-arch-test
 ACT4_BRANCH ?= act4
