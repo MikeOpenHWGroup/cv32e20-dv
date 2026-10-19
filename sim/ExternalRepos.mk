@@ -17,7 +17,7 @@ CV_CORE_REPO   ?= https://github.com/MikeOpenHWGroup/cve2
 CV_CORE_BRANCH ?= cs_registers
 CV_CORE_HASH   ?= 094e974
 
-CV_VERIF_REPO   ?= https://github.com/openhwgroup/core-v-verif
+CV_VERIF_REPO   ?= https://github.com/openhwfoundation/core-v-verif
 CV_VERIF_BRANCH ?= cv32e20-dv/dev
 CV_VERIF_HASH   ?= c525ca3
 
